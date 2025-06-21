@@ -128,7 +128,7 @@ interface UploadedFile {
 export default function FinetunePage() {
   const params = useParams();
   const router = useRouter();
-  const { isChatOpen } = useChatContext();
+  const { isChatOpen, openChatWithMessage } = useChatContext();
   const sessionId = params.sessionId as string;
   
   // State management
@@ -136,7 +136,7 @@ export default function FinetunePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedLicense, setSelectedLicense] = useState<string>('all');
-  const [showOurModelsOnly, setShowOurModelsOnly] = useState(false);
+  const [showTagFilters, setShowTagFilters] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -159,9 +159,7 @@ export default function FinetunePage() {
     
     const matchesLicense = selectedLicense === 'all' || model.license === selectedLicense;
     
-    const matchesOurFilter = !showOurModelsOnly || model.isOurs;
-    
-    return matchesSearch && matchesTags && matchesLicense && matchesOurFilter;
+    return matchesSearch && matchesTags && matchesLicense;
   });
 
   // Handle file upload
@@ -320,7 +318,7 @@ export default function FinetunePage() {
         </aside>
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-0' : ''}`}>
+        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''}`}>
           <div className="p-8">
             <div className="max-w-4xl mx-auto">
               {/* Step 1: Model Selection */}
@@ -331,11 +329,22 @@ export default function FinetunePage() {
                       <h2 className="text-2xl font-bold mb-2">Select Base Model</h2>
                       <p className="text-gray-400">Choose a pre-trained model to fine-tune with your data</p>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="text-sm text-gray-400 text-right">
-                        <p>Need help choosing?</p>
-                        <button className="text-blue-400 hover:text-blue-300 transition-colors">
-                          💬 Ask the AI Assistant
+                  </div>
+
+                  {/* AI Assistant Suggestion */}
+                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-blue-400 text-xl">🤖</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-blue-300 mb-1">Not sure which model to choose?</h4>
+                        <p className="text-sm text-blue-200 mb-3">
+                          Our AI assistant can analyze your specific use case and recommend the best model based on your data type, performance requirements, and goals.
+                        </p>
+                        <button 
+                          onClick={() => openChatWithMessage("I need help choosing the right model for my fine-tuning project. Can you help me select the best model based on my use case and data?")}
+                          className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                          💬 Get Model Recommendations
                         </button>
                       </div>
                     </div>
@@ -343,9 +352,9 @@ export default function FinetunePage() {
 
                   {/* Simplified Search and Filters */}
                   <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-col gap-4">
                       {/* Search */}
-                      <div className="flex-1">
+                      <div>
                         <input
                           type="text"
                           value={searchQuery}
@@ -355,19 +364,9 @@ export default function FinetunePage() {
                         />
                       </div>
                       
-                      {/* Quick Filters */}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setShowOurModelsOnly(!showOurModelsOnly)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            showOurModelsOnly
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-600 text-gray-300 hover:bg-gray-500"
-                          }`}
-                        >
-                          {showOurModelsOnly ? "Okailora Only" : "All Models"}
-                        </button>
-                        
+                      {/* License Filter */}
+                      <div className="flex items-center gap-4">
+                        <label className="text-sm text-gray-400">License:</label>
                         <select
                           value={selectedLicense}
                           onChange={(e) => setSelectedLicense(e.target.value)}
@@ -379,64 +378,95 @@ export default function FinetunePage() {
                           ))}
                         </select>
                       </div>
-                    </div>
 
-                    {/* Tag Filters - Collapsible */}
-                    {selectedTags.length > 0 || searchQuery !== '' ? (
-                      <div className="mt-4 pt-4 border-t border-gray-700">
-                        <div className="flex flex-wrap gap-2">
-                          <span className="text-sm text-gray-400 mr-2">Tags:</span>
-                          {allTags.map(tag => (
-                            <button
-                              key={tag}
-                              onClick={() => {
-                                setSelectedTags(prev => 
-                                  prev.includes(tag) 
-                                    ? prev.filter(t => t !== tag)
-                                    : [...prev, tag]
-                                );
-                              }}
-                              className={`px-2 py-1 rounded-full text-xs transition-colors ${
-                                selectedTags.includes(tag)
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-gray-600 text-gray-300 hover:bg-gray-500"
-                              }`}
-                            >
-                              {tag}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {/* AI Assistant Suggestion */}
-                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="text-blue-400 text-xl">🤖</div>
+                      {/* Tag Filters - Collapsible */}
                       <div>
-                        <h4 className="font-semibold text-blue-300 mb-1">Not sure which model to choose?</h4>
-                        <p className="text-sm text-blue-200 mb-3">
-                          Our AI assistant can help you select the best model based on your specific use case, data type, and requirements.
-                        </p>
-                        <button className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                          💬 Get Model Recommendations
-                        </button>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm text-gray-400">Filter by tags:</label>
+                          <button
+                            onClick={() => setShowTagFilters(!showTagFilters)}
+                            className="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                          >
+                            {showTagFilters ? 'Hide filters' : 'Show tag filters'}
+                            <svg 
+                              className={`w-4 h-4 transition-transform ${showTagFilters ? 'rotate-180' : ''}`} 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        {showTagFilters && (
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                              {allTags.map(tag => (
+                                <button
+                                  key={tag}
+                                  onClick={() => {
+                                    setSelectedTags(prev => 
+                                      prev.includes(tag) 
+                                        ? prev.filter(t => t !== tag)
+                                        : [...prev, tag]
+                                    );
+                                  }}
+                                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                                    selectedTags.includes(tag)
+                                      ? "bg-blue-600 text-white"
+                                      : "bg-gray-600 text-gray-300 hover:bg-gray-500"
+                                  }`}
+                                >
+                                  {tag}
+                                </button>
+                              ))}
+                            </div>
+                            {selectedTags.length > 0 && (
+                              <button
+                                onClick={() => setSelectedTags([])}
+                                className="text-sm text-gray-400 hover:text-gray-300"
+                              >
+                                Clear tag filters
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Show active tag filters even when collapsed */}
+                        {!showTagFilters && selectedTags.length > 0 && (
+                          <div className="mt-2">
+                            <div className="flex flex-wrap gap-1">
+                              <span className="text-xs text-gray-500">Active filters:</span>
+                              {selectedTags.map(tag => (
+                                <span
+                                  key={tag}
+                                  className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full flex items-center gap-1"
+                                >
+                                  {tag}
+                                  <button
+                                    onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                                    className="hover:bg-blue-700 rounded-full p-0.5"
+                                  >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* Models List */}
                   <div className="bg-gray-800/50 rounded-lg border border-gray-700">
-                    <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+                    <div className="p-4 border-b border-gray-700">
                       <h3 className="text-lg font-semibold">
                         Available Models ({filteredModels.length})
                       </h3>
-                      {showOurModelsOnly && (
-                        <span className="text-sm bg-blue-600/20 text-blue-300 px-2 py-1 rounded">
-                          Okailora Models Only
-                        </span>
-                      )}
                     </div>
                     
                     <div className="max-h-96 overflow-y-auto">
@@ -500,7 +530,7 @@ export default function FinetunePage() {
                                 setSearchQuery('');
                                 setSelectedTags([]);
                                 setSelectedLicense('all');
-                                setShowOurModelsOnly(false);
+                                setShowTagFilters(false);
                               }}
                               className="text-blue-400 hover:text-blue-300 text-sm mt-2"
                             >

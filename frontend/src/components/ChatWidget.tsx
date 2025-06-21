@@ -12,6 +12,7 @@ interface Message {
 interface ChatContextType {
   isChatOpen: boolean;
   setIsChatOpen: (open: boolean) => void;
+  openChatWithMessage: (message: string) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -26,15 +27,22 @@ export const useChatContext = () => {
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string>('');
+
+  const openChatWithMessage = (message: string) => {
+    setPendingMessage(message);
+    setIsChatOpen(true);
+  };
 
   return (
-    <ChatContext.Provider value={{ isChatOpen, setIsChatOpen }}>
+    <ChatContext.Provider value={{ isChatOpen, setIsChatOpen, openChatWithMessage }}>
       {children}
+      <ChatWidget pendingMessage={pendingMessage} setPendingMessage={setPendingMessage} />
     </ChatContext.Provider>
   );
 }
 
-export default function ChatWidget() {
+function ChatWidget({ pendingMessage, setPendingMessage }: { pendingMessage: string; setPendingMessage: (message: string) => void }) {
   const { isChatOpen, setIsChatOpen } = useChatContext();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -48,6 +56,18 @@ export default function ChatWidget() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Handle pending message when chat opens
+  useEffect(() => {
+    if (pendingMessage && isChatOpen) {
+      setInputMessage(pendingMessage);
+      setPendingMessage('');
+      // Auto-send the message after a brief delay
+      setTimeout(() => {
+        handleSendMessage(pendingMessage);
+      }, 500);
+    }
+  }, [pendingMessage, isChatOpen]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -56,12 +76,13 @@ export default function ChatWidget() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = async (messageToSend?: string) => {
+    const messageContent = messageToSend || inputMessage;
+    if (!messageContent.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: inputMessage,
+      content: messageContent,
       isUser: true,
       timestamp: new Date(),
     };
@@ -70,11 +91,31 @@ export default function ChatWidget() {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate AI response delay
+    // Enhanced AI response for model recommendation questions
     setTimeout(() => {
+      let aiResponseContent = '';
+      
+      if (messageContent.toLowerCase().includes('model') && (messageContent.toLowerCase().includes('recommend') || messageContent.toLowerCase().includes('choose') || messageContent.toLowerCase().includes('select'))) {
+        aiResponseContent = `I'd be happy to help you choose the right model! I have access to detailed summaries and performance metrics for all available models in our catalog, including both Okailora's custom healthcare models and popular open-source options.
+
+Here's how I can assist you:
+
+🔍 **Model Analysis**: I can compare models based on your specific use case, data type, and performance requirements.
+
+📊 **Performance Insights**: Access to benchmark results, training efficiency, and real-world performance data.
+
+🎯 **Use Case Matching**: Whether you need conversation, clinical documentation, Q&A, or diagnosis assistance - I can recommend the best fit.
+
+💡 **Custom Recommendations**: Based on your data characteristics and goals, I can suggest optimal model configurations.
+
+What specific task or use case are you trying to solve? Also, could you tell me more about your data (e.g., clinical notes, patient conversations, medical Q&A, etc.)?`;
+      } else {
+        aiResponseContent = 'Thanks for your question! This is a demo response. In a real implementation, this would connect to your AI backend to provide helpful assistance with your models and data.';
+      }
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Thanks for your question! This is a demo response. In a real implementation, this would connect to your AI backend to provide helpful assistance with your models and data.',
+        content: aiResponseContent,
         isUser: false,
         timestamp: new Date(),
       };
@@ -109,9 +150,9 @@ export default function ChatWidget() {
         </button>
       )}
 
-      {/* Chat Panel */}
+      {/* Chat Panel - Fixed positioned overlay */}
       {isChatOpen && (
-        <div className="w-96 bg-gray-900 border-l border-gray-800 shadow-2xl flex flex-col h-screen">
+        <div className="fixed top-0 right-0 w-96 bg-gray-900 border-l border-gray-800 shadow-2xl flex flex-col h-screen z-40">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-800">
             <div className="flex items-center space-x-3">
@@ -182,7 +223,7 @@ export default function ChatWidget() {
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
               <button
-                onClick={handleSendMessage}
+                onClick={() => handleSendMessage()}
                 disabled={!inputMessage.trim()}
                 className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white p-2 rounded-lg transition-colors"
               >
@@ -197,3 +238,5 @@ export default function ChatWidget() {
     </>
   );
 }
+
+export default ChatWidget;

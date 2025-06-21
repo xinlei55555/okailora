@@ -279,7 +279,7 @@ export default function Home() {
         </aside>
 
         {/* Main Content - Adjusts width based on chat state */}
-        <main className={`flex-1 p-8 transition-all duration-300 ${isChatOpen ? 'mr-0' : ''}`}>
+        <main className={`flex-1 p-8 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''}`}>
           {/* Hero Section */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
