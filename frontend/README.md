@@ -2,7 +2,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, generate swagger spec:
+```bash
+npm run swagger-generate
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev

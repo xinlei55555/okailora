@@ -11,9 +11,7 @@ import java.nio.file.StandardCopyOption
  * Stores mapping from deployment IDs to the location of their uploaded ZIP files.
  */
 @Component
-class Storage(
-    private val deploymentRegistry: DeploymentRegistry
-) {
+class Storage {
     private val uploadDir: Path = Paths.get("uploads")
 
     init {
