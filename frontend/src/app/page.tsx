@@ -8,57 +8,69 @@ import { useState } from "react";
 const recentRuns = [
   {
     id: "1",
-    name: "Text Classification Model",
+    name: "Radiology Report Classifier",
     status: "completed",
     type: "training",
     progress: 100,
     startTime: "2 hours ago",
     duration: "45 min",
+    privacy: "PHI Compliant",
+    dataSource: "De-identified X-rays",
   },
   {
     id: "2",
-    name: "Sentiment Analysis Fine-tune",
+    name: "Drug Interaction Predictor",
     status: "running",
     type: "training",
     progress: 65,
     startTime: "30 min ago",
     duration: "~20 min remaining",
+    privacy: "HIPAA Secure",
+    dataSource: "Anonymized EHR Data",
   },
   {
     id: "3",
-    name: "Customer Support Bot",
+    name: "Symptom Checker Assistant",
     status: "completed",
     type: "inference",
     progress: 100,
     startTime: "1 day ago",
     duration: "2 sec",
+    privacy: "Local Processing",
+    dataSource: "Clinical Notes",
   },
 ];
 
 const userModels = [
   {
     id: "1",
-    name: "Customer Support Classifier",
-    description: "Fine-tuned BERT model for customer inquiry classification",
+    name: "Chest X-Ray Pneumonia Detector",
+    description: "CNN model fine-tuned for pneumonia detection in chest X-rays",
     accuracy: "94.2%",
     trainedDate: "Dec 15, 2024",
-    type: "Text Classification",
+    type: "Medical Imaging",
+    compliance: "FDA Pre-submission",
+    privacy: "PHI Compliant",
   },
   {
     id: "2",
-    name: "Review Sentiment Analyzer",
-    description: "RoBERTa model for product review sentiment analysis",
+    name: "Clinical Note Summarizer",
+    description: "Transformer model for extracting key insights from patient notes",
     accuracy: "91.8%",
     trainedDate: "Dec 10, 2024",
-    type: "Sentiment Analysis",
+    type: "NLP - Clinical",
+    compliance: "HIPAA Validated",
+    privacy: "De-identified",
   },
   {
     id: "3",
-    name: "Document Summarizer",
-    description: "T5 model fine-tuned for technical document summarization",
+    name: "Drug Dosage Optimizer",
+    description: "ML model for personalized medication dosing recommendations",
     accuracy: "88.5%",
     trainedDate: "Dec 5, 2024",
-    type: "Summarization",
+    type: "Clinical Decision Support",
+    compliance: "IRB Approved",
+    privacy: "Anonymized",
   },
 ];
 
@@ -237,37 +249,67 @@ export default function Home() {
         {/* Main Content - Adjusts width based on chat state */}
         <main className={`flex-1 p-8 transition-all duration-300 ${isChatOpen ? 'mr-0' : ''}`}>
           {/* ...existing code... */}
-          {/* Hero Section with Quick Actions */}
-          <div className="mb-12">
+          {/* Hero Section with Security Banner */}
+          <div className="mb-8">
+            {/* Security & Compliance Banner */}
+            <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-800/50 rounded-lg p-4 mb-8">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
+                    <span className="text-green-300 font-medium">Secure Healthcare Environment</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="bg-blue-900/50 text-blue-300 px-2 py-1 rounded whitespace-nowrap">HIPAA Compliant</span>
+                    <span className="bg-green-900/50 text-green-300 px-2 py-1 rounded whitespace-nowrap">SOC 2 Type II</span>
+                    <span className="bg-purple-900/50 text-purple-300 px-2 py-1 rounded whitespace-nowrap">End-to-End Encrypted</span>
+                  </div>
+                </div>
+                <button className="text-blue-400 hover:text-blue-300 text-sm whitespace-nowrap self-start lg:self-center">
+                  View Security Details →
+                </button>
+              </div>
+            </div>
+
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Welcome to OkaiLora
+              Healthcare AI Made Simple
             </h1>
             <p className="text-xl text-gray-300 mb-8">
-              Train, fine-tune, and deploy AI models without specialized knowledge
+              Train and deploy medical AI models with your sensitive data - securely and without technical expertise
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Healthcare-Specific Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[
-                { title: "Start Training", desc: "Create a new model", icon: "🚀", color: "blue" },
-                { title: "Upload Dataset", desc: "Add your data", icon: "📤", color: "green" },
-                { title: "Run Inference", desc: "Test your models", icon: "🎯", color: "purple" },
-                { title: "Browse Models", desc: "Explore your library", icon: "🔍", color: "orange" },
+                { title: "Secure Upload", desc: "HIPAA-compliant data ingestion", icon: "�", color: "green" },
+                { title: "Browse Projects", desc: "View your models and training progress", icon: "🏥", color: "blue" },
+                { title: "Privacy-First Training", desc: "Local & de-identified processing", icon: "🛡️", color: "purple" },
+                { title: "Clinical Validation", desc: "FDA-ready model testing", icon: "✅", color: "orange" },
               ].map((action) => (
                 <button
                   key={action.title}
-                  className={`p-6 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 transition-all group`}
+                  className={`p-6 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 transition-all group relative overflow-hidden`}
                 >
                   <div className="text-3xl mb-3">{action.icon}</div>
                   <h3 className="font-semibold text-white mb-2">{action.title}</h3>
                   <p className="text-gray-400 text-sm">{action.desc}</p>
+                  <div className={`absolute top-0 right-0 w-1 h-full bg-${action.color}-500 opacity-0 group-hover:opacity-100 transition-opacity`}></div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Recent Activity with Privacy Indicators */}
           <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Recent Healthcare Projects</h2>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-400">All data processed securely</span>
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm">
+                  View Audit Trail
+                </button>
+              </div>
+            </div>
             <div className="space-y-4">
               {recentRuns.map((run) => (
                 <div key={run.id} className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
@@ -275,6 +317,14 @@ export default function Home() {
                     <div>
                       <h3 className="font-semibold text-white">{run.name}</h3>
                       <p className="text-gray-400 text-sm capitalize">{run.type} • Started {run.startTime}</p>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <span className="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">
+                          {run.privacy}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Data: {run.dataSource}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -285,6 +335,11 @@ export default function Home() {
                         {run.status}
                       </span>
                       <span className="text-gray-400 text-sm">{run.duration}</span>
+                      <button className="text-gray-400 hover:text-white">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                   {run.status === 'running' && (
@@ -300,13 +355,16 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Model Library */}
+          {/* Healthcare Model Library */}
           <div className="mb-12">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Your Models</h2>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                View All Models
-              </button>
+              <h2 className="text-2xl font-bold">Your Medical Models</h2>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-400">All models FDA-ready</span>
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                  View All Models
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userModels.map((model) => (
@@ -315,9 +373,14 @@ export default function Home() {
                     <div>
                       <h3 className="font-semibold text-white mb-2">{model.name}</h3>
                       <p className="text-gray-400 text-sm mb-3">{model.description}</p>
-                      <span className="inline-block bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs">
-                        {model.type}
-                      </span>
+                      <div className="flex items-center space-x-2 mb-3">
+                        <span className="inline-block bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs">
+                          {model.type}
+                        </span>
+                        <span className="inline-block bg-blue-900/50 text-blue-300 px-2 py-1 rounded text-xs">
+                          {model.compliance}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-2 mb-4">
@@ -326,13 +389,20 @@ export default function Home() {
                       <span className="text-green-400 font-medium">{model.accuracy}</span>
                     </div>
                     <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Privacy:</span>
+                      <span className="text-green-300">{model.privacy}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
                       <span className="text-gray-400">Trained:</span>
                       <span className="text-gray-300">{model.trainedDate}</span>
                     </div>
                   </div>
                   <div className="flex space-x-2">
                     <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm transition-colors">
-                      Run Inference
+                      Clinical Test
+                    </button>
+                    <button className="px-3 py-2 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded text-sm transition-colors">
+                      Export
                     </button>
                     <button className="px-3 py-2 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded text-sm transition-colors">
                       ⋯
@@ -343,15 +413,15 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Getting Started Guide */}
-          <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl p-8 border border-blue-800/30">
-            <h2 className="text-2xl font-bold mb-4">Getting Started</h2>
-            <p className="text-gray-300 mb-6">New to AI model training? Follow these simple steps to get started.</p>
+          {/* Healthcare-Specific Getting Started Guide */}
+          <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl p-8 border border-blue-800/30 mb-8">
+            <h2 className="text-2xl font-bold mb-4">Getting Started with Healthcare AI</h2>
+            <p className="text-gray-300 mb-6">New to medical AI? Follow these HIPAA-compliant steps designed for healthcare professionals.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { step: "1", title: "Upload Your Data", desc: "Start by uploading your dataset in CSV, JSON, or text format" },
-                { step: "2", title: "Choose a Model", desc: "Select from pre-trained models or start with a base model" },
-                { step: "3", title: "Start Training", desc: "Configure your training parameters and let the magic happen" },
+                { step: "1", title: "Secure Data Upload", desc: "Upload your de-identified patient data using our HIPAA-compliant pipeline" },
+                { step: "2", title: "Choose Medical Template", desc: "Select from FDA-validated model templates for your specialty" },
+                { step: "3", title: "Privacy-First Training", desc: "Train locally or in our secure cloud with full audit trails" },
               ].map((guide) => (
                 <div key={guide.step} className="text-center">
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-4">
@@ -363,8 +433,11 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-8 text-center">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                Start Your First Model
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors mr-4">
+                Start Your First Medical Model
+              </button>
+              <button className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-3 rounded-lg font-medium transition-colors">
+                View Healthcare Documentation
               </button>
             </div>
           </div>
