@@ -115,7 +115,7 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <div className="text-xl font-bold text-blue-400">Okailora</div>
+              <div className="text-xl font-bold text-blue-400">OkaiLora</div>
             </div>
             
             {/* Search Bar */}
@@ -205,8 +205,8 @@ export default function Home() {
                       <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
                         <div>
-                          <p className="text-white font-medium">Dr. Sarah Chen</p>
-                          <p className="text-gray-400 text-sm">Radiologist</p>
+                          <p className="text-white font-medium">John Doe</p>
+                          <p className="text-gray-400 text-sm">john.doe@example.com</p>
                         </div>
                       </div>
                     </div>
