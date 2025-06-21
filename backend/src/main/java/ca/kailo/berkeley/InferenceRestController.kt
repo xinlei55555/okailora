@@ -16,7 +16,7 @@ class InferenceRestController(
 ) : InferenceAPI {
 
     override fun inferenceList(): ResponseEntity<List<InferenceList200ResponseInner>> {
-        val list = deploymentRegistry.deployments.values.map {
+        val list = deploymentRegistry.getAll().map {
             InferenceList200ResponseInner(
                 it.id,
                 it.type.path,
@@ -27,10 +27,7 @@ class InferenceRestController(
     }
 
     override fun inferenceUploadData(deploymentId: String, file: Resource?): ResponseEntity<Unit> {
-        if (file == null || !file.exists()) {
-            return ResponseEntity.badRequest().build()
-        }
-        storage.saveData(Storage.StorageType.INFERENCE, deploymentId, file)
+        storage.saveData(Storage.StorageType.INFERENCE, deploymentId, file!!)
         return ResponseEntity.ok().build()
     }
 
@@ -38,7 +35,7 @@ class InferenceRestController(
         val processBuilder = ProcessBuilder(
             "python3",
             "inference.py",
-            "--config ${deploymentRegistry.deployments[deploymentId]!!.type.path}.yaml",
+            "--config ${deploymentRegistry.get(deploymentId)!!.type.path}.yaml",
             "--deployment_id $deploymentId"
         ).inheritIO()
 
