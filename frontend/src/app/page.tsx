@@ -249,28 +249,8 @@ export default function Home() {
         {/* Main Content - Adjusts width based on chat state */}
         <main className={`flex-1 p-8 transition-all duration-300 ${isChatOpen ? 'mr-0' : ''}`}>
           {/* ...existing code... */}
-          {/* Hero Section with Security Banner */}
+          {/* Hero Section */}
           <div className="mb-8">
-            {/* Security & Compliance Banner */}
-            <div className="bg-gradient-to-r from-green-900/30 to-blue-900/30 border border-green-800/50 rounded-lg p-4 mb-8">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
-                    <span className="text-green-300 font-medium">Secure Healthcare Environment</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span className="bg-blue-900/50 text-blue-300 px-2 py-1 rounded whitespace-nowrap">HIPAA Compliant</span>
-                    <span className="bg-green-900/50 text-green-300 px-2 py-1 rounded whitespace-nowrap">SOC 2 Type II</span>
-                    <span className="bg-purple-900/50 text-purple-300 px-2 py-1 rounded whitespace-nowrap">End-to-End Encrypted</span>
-                  </div>
-                </div>
-                <button className="text-blue-400 hover:text-blue-300 text-sm whitespace-nowrap self-start lg:self-center">
-                  View Security Details →
-                </button>
-              </div>
-            </div>
-
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
               Healthcare AI Made Simple
             </h1>
