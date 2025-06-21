@@ -289,10 +289,10 @@ export default function Home() {
             {/* Core AI Workflow Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { title: "Train Model", desc: "Start training from scratch with your data", icon: "🚀", color: "blue" },
-                { title: "Fine-tune", desc: "Improve existing models with new data", icon: "⚡", color: "purple" },
-                { title: "Run Inference", desc: "Test and deploy your trained models", icon: "🎯", color: "green" },
-                { title: "Share & Export", desc: "Collaborate and export your models", icon: "📤", color: "orange" },
+                { title: "Train Model", desc: "Start training from scratch with your data", icon: "🚀", colorClass: "bg-blue-500" },
+                { title: "Fine-tune", desc: "Improve existing models with new data", icon: "⚡", colorClass: "bg-purple-500" },
+                { title: "Run Inference", desc: "Test and deploy your trained models", icon: "🎯", colorClass: "bg-green-500" },
+                { title: "Share & Export", desc: "Collaborate and export your models", icon: "📤", colorClass: "bg-orange-500" },
               ].map((action) => (
                 <button
                   key={action.title}
@@ -301,7 +301,7 @@ export default function Home() {
                   <div className="text-2xl lg:text-3xl mb-2 lg:mb-3">{action.icon}</div>
                   <h3 className="font-semibold text-white mb-1 lg:mb-2 text-sm lg:text-base">{action.title}</h3>
                   <p className="text-gray-400 text-xs lg:text-sm">{action.desc}</p>
-                  <div className={`absolute top-0 right-0 w-1 h-full bg-${action.color}-500 opacity-0 group-hover:opacity-100 transition-opacity`}></div>
+                  <div className={`absolute top-0 right-0 w-1 h-full ${action.colorClass} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
                 </button>
               ))}
             </div>
