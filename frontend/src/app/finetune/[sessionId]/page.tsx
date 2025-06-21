@@ -277,8 +277,8 @@ export default function FinetunePage() {
               </h2>
               <div className="space-y-3">
                 {[
-                  { step: 1, title: "Upload Training Data", icon: "📁" },
-                  { step: 2, title: "Select Base Model", icon: "🤖" },
+                  { step: 1, title: "Select Base Model", icon: "🤖" },
+                  { step: 2, title: "Upload Training Data", icon: "📁" },
                   { step: 3, title: "Configure Parameters", icon: "⚙️" },
                   { step: 4, title: "Review & Start", icon: "🚀" },
                 ].map((item) => (
@@ -323,12 +323,222 @@ export default function FinetunePage() {
         <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-0' : ''}`}>
           <div className="p-8">
             <div className="max-w-4xl mx-auto">
-              {/* Step 1: Data Upload */}
+              {/* Step 1: Model Selection */}
               {currentStep === 1 && (
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">Upload Training Data</h2>
-                    <p className="text-gray-400">Upload your healthcare data files for fine-tuning</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">Select Base Model</h2>
+                      <p className="text-gray-400">Choose a pre-trained model to fine-tune with your data</p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="text-sm text-gray-400 text-right">
+                        <p>Need help choosing?</p>
+                        <button className="text-blue-400 hover:text-blue-300 transition-colors">
+                          💬 Ask the AI Assistant
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Simplified Search and Filters */}
+                  <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {/* Search */}
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search models by name, description, or tags..."
+                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Quick Filters */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowOurModelsOnly(!showOurModelsOnly)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            showOurModelsOnly
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-600 text-gray-300 hover:bg-gray-500"
+                          }`}
+                        >
+                          {showOurModelsOnly ? "Okailora Only" : "All Models"}
+                        </button>
+                        
+                        <select
+                          value={selectedLicense}
+                          onChange={(e) => setSelectedLicense(e.target.value)}
+                          className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">All Licenses</option>
+                          {allLicenses.map(license => (
+                            <option key={license} value={license}>{license}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Tag Filters - Collapsible */}
+                    {selectedTags.length > 0 || searchQuery !== '' ? (
+                      <div className="mt-4 pt-4 border-t border-gray-700">
+                        <div className="flex flex-wrap gap-2">
+                          <span className="text-sm text-gray-400 mr-2">Tags:</span>
+                          {allTags.map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => {
+                                setSelectedTags(prev => 
+                                  prev.includes(tag) 
+                                    ? prev.filter(t => t !== tag)
+                                    : [...prev, tag]
+                                );
+                              }}
+                              className={`px-2 py-1 rounded-full text-xs transition-colors ${
+                                selectedTags.includes(tag)
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-gray-600 text-gray-300 hover:bg-gray-500"
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* AI Assistant Suggestion */}
+                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-blue-400 text-xl">🤖</div>
+                      <div>
+                        <h4 className="font-semibold text-blue-300 mb-1">Not sure which model to choose?</h4>
+                        <p className="text-sm text-blue-200 mb-3">
+                          Our AI assistant can help you select the best model based on your specific use case, data type, and requirements.
+                        </p>
+                        <button className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                          💬 Get Model Recommendations
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Models List */}
+                  <div className="bg-gray-800/50 rounded-lg border border-gray-700">
+                    <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">
+                        Available Models ({filteredModels.length})
+                      </h3>
+                      {showOurModelsOnly && (
+                        <span className="text-sm bg-blue-600/20 text-blue-300 px-2 py-1 rounded">
+                          Okailora Models Only
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-4 space-y-3">
+                        {filteredModels.map((model: Model) => (
+                          <div
+                            key={model.id}
+                            onClick={() => setSelectedModel(model.id)}
+                            className={`p-4 rounded-lg border cursor-pointer transition-all hover:scale-[1.01] ${
+                              selectedModel === model.id
+                                ? "border-blue-500 bg-blue-500/10 shadow-lg"
+                                : "border-gray-600 hover:border-gray-500 bg-gray-700/30"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <h3 className="font-semibold text-white">{model.name}</h3>
+                                {model.isOurs && (
+                                  <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-medium">
+                                    Okailora
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <span className="text-xs text-gray-400">{model.downloads} downloads</span>
+                                {selectedModel === model.id && (
+                                  <div className="text-xs text-blue-400 mt-1">✓ Selected</div>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-400 mb-3 leading-relaxed">{model.description}</p>
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {model.tags.slice(0, 4).map((tag: string) => (
+                                <span
+                                  key={tag}
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    model.isOurs 
+                                      ? "bg-blue-600/20 text-blue-300"
+                                      : "bg-gray-600 text-gray-300"
+                                  }`}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                              {model.tags.length > 4 && (
+                                <span className="text-xs text-gray-500">
+                                  +{model.tags.length - 4} more
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500">License: {model.license}</div>
+                          </div>
+                        ))}
+                        
+                        {filteredModels.length === 0 && (
+                          <div className="text-center py-8 text-gray-400">
+                            <div className="text-4xl mb-2">🔍</div>
+                            <p>No models found matching your criteria</p>
+                            <button 
+                              onClick={() => {
+                                setSearchQuery('');
+                                setSelectedTags([]);
+                                setSelectedLicense('all');
+                                setShowOurModelsOnly(false);
+                              }}
+                              className="text-blue-400 hover:text-blue-300 text-sm mt-2"
+                            >
+                              Clear all filters
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedModel && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => setCurrentStep(2)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+                      >
+                        Continue to Data Upload →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Data Upload */}
+              {currentStep === 2 && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">Upload Training Data</h2>
+                      <p className="text-gray-400">Upload your healthcare data files for fine-tuning</p>
+                    </div>
+                    <div className="text-sm text-gray-400 text-right">
+                      <p>Selected Model:</p>
+                      <p className="text-blue-400 font-medium">
+                        {selectedModel ? allModels.find(m => m.id === selectedModel)?.name : 'None'}
+                      </p>
+                    </div>
                   </div>
 
                   {/* File Upload Area */}
@@ -431,175 +641,22 @@ export default function FinetunePage() {
                     </div>
                   </div>
 
-                  {uploadedFiles.some(f => f.status === 'completed') && (
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => setCurrentStep(2)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-                      >
-                        Continue to Model Selection
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Step 2: Model Selection */}
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">Select Base Model</h2>
-                    <p className="text-gray-400">Choose a pre-trained model to fine-tune with your data</p>
-                  </div>
-
-                  {/* Search and Filters */}
-                  <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                      {/* Search */}
-                      <div className="lg:col-span-2">
-                        <label className="block text-sm font-medium mb-2">Search Models</label>
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="Search for medical, clinical, or healthcare models..."
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      {/* License Filter */}
-                      <div>
-                        <label className="block text-sm font-medium mb-2">License</label>
-                        <select
-                          value={selectedLicense}
-                          onChange={(e) => setSelectedLicense(e.target.value)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="all">All Licenses</option>
-                          {allLicenses.map(license => (
-                            <option key={license} value={license}>{license}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Our Models Toggle */}
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Source</label>
-                        <button
-                          onClick={() => setShowOurModelsOnly(!showOurModelsOnly)}
-                          className={`w-full px-4 py-2 rounded-lg border transition-colors ${
-                            showOurModelsOnly
-                              ? "bg-blue-600 border-blue-500 text-white"
-                              : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                          }`}
-                        >
-                          {showOurModelsOnly ? "Okailora Only" : "All Models"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Tag Filters */}
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Filter by Tags</label>
-                      <div className="flex flex-wrap gap-2">
-                        {allTags.map(tag => (
-                          <button
-                            key={tag}
-                            onClick={() => {
-                              setSelectedTags(prev => 
-                                prev.includes(tag) 
-                                  ? prev.filter(t => t !== tag)
-                                  : [...prev, tag]
-                              );
-                            }}
-                            className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                              selectedTags.includes(tag)
-                                ? "bg-blue-600 text-white"
-                                : "bg-gray-600 text-gray-300 hover:bg-gray-500"
-                            }`}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Models List */}
-                  <div className="bg-gray-800/50 rounded-lg border border-gray-700">
-                    <div className="p-4 border-b border-gray-700">
-                      <h3 className="text-lg font-semibold">
-                        Available Models ({filteredModels.length})
-                      </h3>
-                    </div>
-                    
-                    <div className="max-h-96 overflow-y-auto">
-                      <div className="p-4 space-y-4">
-                        {filteredModels.map((model: Model) => (
-                          <div
-                            key={model.id}
-                            onClick={() => setSelectedModel(model.id)}
-                            className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                              selectedModel === model.id
-                                ? "border-blue-500 bg-blue-500/10"
-                                : "border-gray-600 hover:border-gray-500 bg-gray-700/30"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-white">{model.name}</h3>
-                                {model.isOurs && (
-                                  <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                                    Okailora
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-xs text-gray-400">{model.downloads}</span>
-                            </div>
-                            <p className="text-sm text-gray-400 mb-3">{model.description}</p>
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {model.tags.map((tag: string) => (
-                                <span
-                                  key={tag}
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    model.isOurs 
-                                      ? "bg-blue-600/20 text-blue-300"
-                                      : "bg-gray-600 text-gray-300"
-                                  }`}
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                            <div className="text-xs text-gray-500">License: {model.license}</div>
-                          </div>
-                        ))}
-                        
-                        {filteredModels.length === 0 && (
-                          <div className="text-center py-8 text-gray-400">
-                            No models found matching your criteria
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedModel && (
-                    <div className="flex justify-between">
-                      <button
-                        onClick={() => setCurrentStep(1)}
-                        className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
-                      >
-                        Back to Data Upload
-                      </button>
+                  <div className="flex justify-between">
+                    <button
+                      onClick={() => setCurrentStep(1)}
+                      className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
+                    >
+                      ← Back to Model Selection
+                    </button>
+                    {uploadedFiles.some(f => f.status === 'completed') && (
                       <button
                         onClick={() => setCurrentStep(3)}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
                       >
-                        Configure Parameters
+                        Configure Parameters →
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -795,13 +852,13 @@ export default function FinetunePage() {
                       onClick={() => setCurrentStep(2)}
                       className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
                     >
-                      Back to Model Selection
+                      ← Back to Data Upload
                     </button>
                     <button
                       onClick={() => setCurrentStep(4)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
                     >
-                      Review & Start Training
+                      Review & Start Training →
                     </button>
                   </div>
                 </div>
@@ -916,7 +973,7 @@ export default function FinetunePage() {
                       onClick={() => setCurrentStep(3)}
                       className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
                     >
-                      Back to Configuration
+                      ← Back to Configuration
                     </button>
                     <button
                       className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all font-semibold"
