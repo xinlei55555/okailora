@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useChatContext } from "@/components/ChatWidget";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { handleFineTuneClick, handleTrainClick, handleInferenceClick, handleShareClick } from "@/utils/navigation";
 
 // Mock data - replace with real data later
 const recentProjects = [
@@ -85,6 +87,7 @@ const recentProjects = [
 
 export default function Home() {
   const { isChatOpen } = useChatContext();
+  const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -289,13 +292,14 @@ export default function Home() {
             {/* Core AI Workflow Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { title: "Train Model", desc: "Start training from scratch with your data", icon: "🚀", colorClass: "bg-blue-500" },
-                { title: "Fine-tune", desc: "Improve existing models with new data", icon: "⚡", colorClass: "bg-purple-500" },
-                { title: "Run Inference", desc: "Test and deploy your trained models", icon: "🎯", colorClass: "bg-green-500" },
-                { title: "Share & Export", desc: "Collaborate and export your models", icon: "📤", colorClass: "bg-orange-500" },
+                { title: "Train Model", desc: "Start training from scratch with your data", icon: "🚀", colorClass: "bg-blue-500", handler: () => handleTrainClick(router) },
+                { title: "Fine-tune", desc: "Improve existing models with new data", icon: "⚡", colorClass: "bg-purple-500", handler: () => handleFineTuneClick(router) },
+                { title: "Run Inference", desc: "Test and deploy your trained models", icon: "🎯", colorClass: "bg-green-500", handler: () => handleInferenceClick(router) },
+                { title: "Share & Export", desc: "Collaborate and export your models", icon: "📤", colorClass: "bg-orange-500", handler: () => handleShareClick(router) },
               ].map((action) => (
                 <button
                   key={action.title}
+                  onClick={action.handler}
                   className={`p-4 lg:p-6 rounded-xl border border-gray-700 bg-gray-800/50 hover:bg-gray-800 transition-all group relative overflow-hidden`}
                 >
                   <div className="text-2xl lg:text-3xl mb-2 lg:mb-3">{action.icon}</div>
