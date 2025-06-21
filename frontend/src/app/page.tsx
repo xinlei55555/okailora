@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useChatContext } from "@/components/ChatWidget";
+import { useState } from "react";
 
 // Mock data - replace with real data later
 const recentRuns = [
@@ -63,6 +64,8 @@ const userModels = [
 
 export default function Home() {
   const { isChatOpen } = useChatContext();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -93,13 +96,108 @@ export default function Home() {
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
-              <button className="relative p-2 text-gray-400 hover:text-white transition-colors">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM10.5 17H3a1 1 0 01-1-1V4a1 1 0 011-1h7.5M17 7v10" />
-                </svg>
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
-              </button>
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
+              {/* Notifications */}
+              <div className="relative">
+                <button 
+                  className="relative p-2 text-gray-400 hover:text-white transition-colors hover:bg-gray-800 rounded-lg"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  title="Notifications"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM10.5 17H3a1 1 0 01-1-1V4a1 1 0 011-1h7.5M17 7v10" />
+                  </svg>
+                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
+                </button>
+                
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+                    <div className="p-4 border-b border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-white font-semibold">Notifications</h3>
+                        <button className="text-sm text-blue-400 hover:text-blue-300">Mark all as read</button>
+                      </div>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {[
+                        { id: 1, title: "Training Complete", message: "Your sentiment analysis model has finished training", time: "2 min ago", type: "success" },
+                        { id: 2, title: "Dataset Uploaded", message: "Customer reviews dataset has been processed", time: "1 hour ago", type: "info" },
+                        { id: 3, title: "Training Started", message: "Text classification model training has begun", time: "3 hours ago", type: "info" },
+                        { id: 4, title: "Inference Job Failed", message: "Model inference encountered an error", time: "1 day ago", type: "error" },
+                      ].map((notification) => (
+                        <div key={notification.id} className="p-4 border-b border-gray-700 hover:bg-gray-750 cursor-pointer">
+                          <div className="flex items-start space-x-3">
+                            <div className={`w-2 h-2 rounded-full mt-2 ${
+                              notification.type === 'success' ? 'bg-green-400' :
+                              notification.type === 'error' ? 'bg-red-400' : 'bg-blue-400'
+                            }`}></div>
+                            <div className="flex-1">
+                              <p className="text-white font-medium">{notification.title}</p>
+                              <p className="text-gray-400 text-sm mt-1">{notification.message}</p>
+                              <p className="text-gray-500 text-xs mt-2">{notification.time}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3 border-t border-gray-700">
+                      <button className="w-full text-center text-blue-400 hover:text-blue-300 text-sm">
+                        View all notifications
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Menu */}
+              <div className="relative">
+                <button 
+                  className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 hover:scale-105"
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  title="Profile Menu"
+                >
+                </button>
+
+                {/* Profile Dropdown */}
+                {showProfileMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+                    <div className="p-4 border-b border-gray-700">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
+                        <div>
+                          <p className="text-white font-medium">John Doe</p>
+                          <p className="text-gray-400 text-sm">john.doe@example.com</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="py-2">
+                      {[
+                        { icon: "👤", label: "Profile Settings", href: "#" },
+                        { icon: "🏢", label: "Account", href: "#" },
+                        { icon: "⚙️", label: "Preferences", href: "#" },
+                        { icon: "🔑", label: "API Keys", href: "#" },
+                        { icon: "📊", label: "Usage & Billing", href: "#" },
+                        { icon: "❓", label: "Help & Support", href: "#" },
+                      ].map((item, index) => (
+                        <a
+                          key={index}
+                          href={item.href}
+                          className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                        >
+                          <span className="text-lg">{item.icon}</span>
+                          <span>{item.label}</span>
+                        </a>
+                      ))}
+                    </div>
+                    <div className="border-t border-gray-700 py-2">
+                      <button className="flex items-center space-x-3 px-4 py-2 text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors w-full text-left">
+                        <span className="text-lg">🚪</span>
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
