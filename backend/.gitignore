@@ -41,3 +41,8 @@ out/
 
 ### Generated ###
 generated/
+
+
+### berkeley
+uploads/
+deployments.yaml

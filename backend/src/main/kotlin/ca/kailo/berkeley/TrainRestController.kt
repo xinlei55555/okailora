@@ -16,10 +16,6 @@ class TrainRestController(
 ) : TrainAPI {
 
     override fun trainUploadData(deploymentId: String, file: Resource?): ResponseEntity<Unit> {
-        // Validate resource
-//        if (file == null || !file.exists()) {
-//            return ResponseEntity.badRequest().build()
-//        }
         // Save the uploaded ZIP
         storage.saveData(Storage.StorageType.TRAIN, deploymentId, file!!)
         return ResponseEntity.ok().build()
@@ -29,11 +25,18 @@ class TrainRestController(
         // Lookup the uploaded ZIP
         val zipPath = storage.getDataPath(Storage.StorageType.TRAIN, deploymentId)
 
+        val type = Deployment.Type.of(trainStartRequest.modelType.value)!!
+
+        val deployment = Deployment(deploymentId, type, "sample description") // TODO
+
+        deploymentRegistry.put(deployment)
+
+
         // Prepare to run the Python training script
         val processBuilder = ProcessBuilder(
             "python3",
             "train.py",
-            "--config ${deploymentRegistry.deployments[deploymentId]!!.type.path}.yaml",
+            "--config ${type.path}.yaml",
             "--data_path $zipPath",
             "--deployment_id $deploymentId"
         ).inheritIO()
