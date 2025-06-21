@@ -1,0 +1,102 @@
+MODEL_NAME: MedSegGen
+
+SEED: 42
+EVAL_ONLY: False # True => does not run training, only evaluation.
+
+WANDB:
+  WANDB_ID: -1
+  USE_WANDB: True
+  WANDB_SAVE: False
+  WANDB_GRAD_LOG_INTERVAL: 0 # gradient logging interval
+  WANDB_OFFLINE: False # True => offline mode | False => online mode
+
+DATASET:
+  DATASET_NAME: 'HyperKVasir'
+  DATASET_PATH: '${ROOT_DIR}/data/datasets/HyperKvasir'
+  LOAD_FULL_DATA: 8  # Not loading full data; trained on 8images instead
+  IMAGE_SIZE: 256 # Image dimensions: 256x256
+  N_CHANNELS: 3
+  LOAD_HKVASIR_VIDEOS: False
+
+# Model parameters are inspired from VQf4 in the the LDM paper:
+# https://github.com/CompVis/latent-diffusion/blob/a506df5756472e2ebaf9078affdde2c4f1502cd4/models/first_stage_models/vq-f4/config.yaml#L23
+MODEL:
+  BASE_LR: 4.5e-06 # default value
+  EMBED_DIM: 3 # number of channels in the embeddings
+  NUM_EMBEDDING: 8192 # number of unique embeddings in the codebook
+  USE_EMA: False # use exponential moving average for VQVAE
+
+  # VQ f4 model from LDM parameters
+  CHECKPOINT_PATH: 'checkpoints/pretrained_ldm_weights/VQ-f4_base/model.ckpt'
+  
+  FREEZE:
+    FREEZE_PARAMS: [] #['down', 'up'] # freeze the exterior (down and up) layers of the VQGAN
+
+  ddconfig:
+    double_z: false
+    z_channels: 3
+    resolution: 256
+    in_channels: 3
+    out_ch: 3
+    ch: 128
+    ch_mult:
+    - 1
+    - 2
+    - 4
+    num_res_blocks: 2
+    attn_resolutions: []
+    dropout: 0.0
+  lossconfig:
+      target: taming.modules.losses.vqperceptual.VQLPIPSWithDiscriminator
+      params:
+        disc_conditional: false
+        disc_in_channels: 3
+        disc_start: 0
+        disc_weight: 0.75
+        codebook_weight: 1.0
+
+
+LOSSES:
+  PARAMETER_LOSS: 1.0
+
+# TRAINING
+START_EPOCH: 0 # first epoch number
+EPOCH_NUMBER: 300 # number of epochs
+BATCH_SIZE: 1 # batch size
+
+# FOLLOW UP ON THE TRAINING OF ANOTHER PREVIOUS RUN?
+FOLLOW_UP: False
+# IF YES:
+PREVIOUS_TRAINING_EPOCH: 1
+PREVIOUS_CHECKPOINT: ''
+
+# WEIGHT DECAY AND OPTIMIZER --- COUDLD TRY MY OWN
+# OPTIMIZER: 'schedulefree'
+# WEIGHT_DECAY: 0.1 # value found from video mamba
+MAX_GRAD_NORM: 1.0 # max_grad_norm < 0 => inactive
+# LR:
+#   BASE: 0.000005
+
+# SCHEDULER
+SCHEDULER: True
+SCHEDULER_FCT: schedulefree
+
+CHECKPOINT_DIRECTORY: ${ROOT_DIR}/checkpoints/HyperKVasir/vqgan
+CHECKPOINT_NAME: 'base_vae'
+BASE_MODEL_CKPT: ''
+
+# ----------------- OLD DiffuseVAE --- Switched to LDM ----------------- #
+# Reference from IMAGE_SIZE 256 from: https://github.com/kpandey008/DiffuseVAE/blob/8e6d2511bd90c02a2fb05e1bb6c70ba85ce253c2/main/configs/dataset/celebahq/test.yaml#L27
+# MODEL:
+#   Z_DIM: 1024
+#   ENC_BLOCK_CONFIG: "256x3,256d2,256t128,128x3,128d2,128t64,64x5,64d2,64t32,32x7,32d2,32t16,16x9,16d2,16t8,8x7,8d2,8t4,4x5,4d4,4t1,1x2"
+#   ENC_CHANNEL_CONFIG: "256:64,128:64,64:64,32:128,16:128,8:256,4:512,1:1024"
+#   DEC_BLOCK_CONFIG: "1x2,1u4,1t4,4x4,4u2,4t8,8x6,8u2,8t16,16x8,16u2,16t32,32x5,32u2,32t64,64x4,64u2,64t128,128x2,128u2,128t256,256x2"
+#   DEC_CHANNEL_CONFIG: "256:64,128:64,64:64,32:128,16:128,8:256,4:512,1:1024"
+
+# MODEL:
+#   Z_DIM: 1024
+#   ENC_BLOCK_CONFIG: "512x3,512d2,512t256,256x3,256d2,256t128,128x5,128d2,128t64,64x7,64d2,64t32,32x9,32d2,32t16,16x7,16d2,16t8,8x5,8d2,8t4,4x3,4d4,4t1,1x2"
+#   ENC_CHANNEL_CONFIG: "512:128,256:64,128:64,64:64,32:128,16:128,8:256,4:512,1:1024"
+#   DEC_BLOCK_CONFIG: "1x2,1u4,1t4,4x3,4u4,4t8,8x5,8u2,8t16,16x7,16u2,16t32,32x9,32u2,32t64,64x7,64u2,64t128,128x5,128u2,128t256,256x3,256u2,256t512,512x3"
+#   DEC_CHANNEL_CONFIG: "512:256,256:128,128:64,64:64,32:128,16:128,8:256,4:512,1:1024"
