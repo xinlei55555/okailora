@@ -1,0 +1,180 @@
+openapi: 3.0.1
+info:
+  version: 0.1.0
+  title: AppAPI
+tags:
+  - name: Train
+  - name: Inference
+paths:
+  /train/upload_data:
+    post:
+      tags: [Train]
+      summary: Upload training data (zip)
+      description: Creates the deployment if it does not exist, then uploads a ZIP of training data.
+      operationId: train_upload_data
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Zip file containing training data
+      responses:
+        '200':
+          description: Data uploaded successfully
+        '201':
+          description: Deployment created and data uploaded
+        '400':
+          description: Bad request
+        default:
+          description: Unexpected error
+
+  /train/start:
+    post:
+      tags: [Train]
+      summary: Start training
+      description: Begins training for the given model type.
+      operationId: train_start
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - model_type
+              properties:
+                model_type:
+                  type: string
+                  enum:
+                    - classification
+                    - segmentation
+                    - generation
+                    - bbox
+                  description: Type of model to train
+      responses:
+        '200':
+          description: Training started
+        '400':
+          description: Invalid request (e.g., unknown model_type)
+        default:
+          description: Unexpected error
+
+  /inference/list:
+    get:
+      tags: [Inference]
+      summary: List inference deployments
+      description: Returns a list of all inference deployments.
+      operationId: inference_list
+      responses:
+        '200':
+          description: A JSON array of inference deployments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    deployment_id:
+                      type: string
+                    type:
+                      type: string
+                    description:
+                      type: string
+        default:
+          description: Unexpected error
+
+  /inference/upload_data:
+    post:
+      tags: [Inference]
+      summary: Upload data for inference
+      description: Uploads data required for inference.
+      operationId: inference_upload_data
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Data file for inference
+      responses:
+        '200':
+          description: Data uploaded successfully
+        default:
+          description: Unexpected error
+
+  /inference/start:
+    post:
+      tags: [Inference]
+      summary: Start inference
+      description: Begins inference on the uploaded data.
+      operationId: inference_start
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              # TODO: define the input schema for inference parameters
+      responses:
+        '200':
+          description: Inference started
+        default:
+          description: Unexpected error
+
+  /inference/weights:
+    get:
+      tags: [Inference]
+      summary: Get inference weights
+      description: Retrieves the current weights/configuration for inference.
+      operationId: inference_weights
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current inference weights
+          content:
+            application/json:
+              schema:
+                type: object
+                # TODO: define the schema for weights response
+        default:
+          description: Unexpected error
+
