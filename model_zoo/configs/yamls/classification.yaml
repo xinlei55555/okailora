@@ -1,0 +1,36 @@
+MODEL_NAME: 'classification'
+
+SEED: 42
+EVAL_ONLY: False # True => does not run training, only evaluation.
+
+WANDB:
+  WANDB_ID: -1
+  USE_WANDB: True
+
+DATASET:
+  DATASET_PATH: ''
+  IMAGE_SIZE: 256 # Image dimensions: 256x256
+  N_CHANNELS: 3
+
+MODEL:
+  UUID: ''
+  BASE_LR: 4.5e-06 # default value
+
+  PRETRAINED_CHECKPOINT: ''
+  CHECKPOINT_PATH: ''
+
+# TRAINING
+START_EPOCH: 0 # first epoch number
+EPOCH_NUMBER: 300 # number of epochs
+BATCH_SIZE: 1 # batch size
+
+
+WEIGHT_DECAY: 0.1 # value found from video mamba
+MAX_GRAD_NORM: 1.0 # max_grad_norm < 0 => inactive
+LR:
+  BASE: 0.000005
+
+# SCHEDULER
+SCHEDULER: True
+SCHEDULER_FCT: schedulefree
+
