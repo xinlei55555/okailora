@@ -207,8 +207,8 @@ export default function InferencePage() {
 			
 			console.log('Inference started successfully:', response);
 			
-			// Navigate to the inference loop page
-			router.push(`/inference-loop/${sessionId}`);
+			// Navigate directly to the inference results page
+			router.push(`/inference-results/${sessionId}`);
 			
 		} catch (error) {
 			console.error('Failed to start inference:', error);
