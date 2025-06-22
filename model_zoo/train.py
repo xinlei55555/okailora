@@ -173,6 +173,14 @@ def train(config):
         loss = total_loss / len(train_loader)
         print(f"[TRAIN] Loss: {loss:.6f}")
 
+        # avoid log(0) by clamping to epsilon
+        train_loss_value = total_loss / len(train_loader)
+        train_loss_value = max(train_loss_value, np.finfo(float).eps)
+        loss = np.log(train_loss_value)
+
+        val_loss_value = max(float(val_loss), np.finfo(float).eps)
+        val_loss = np.log(val_loss_value)
+
         if config.MODEL_NAME == 'classification':
             train_accuracy = train_correct / train_total
             print(f"[TRAIN] Accuracy: {train_accuracy:.4f}")
@@ -184,14 +192,6 @@ def train(config):
             print("pipe:{\"epoch\":" + str(epoch) + ",\"train_loss\":" + str(loss) + ",\"val_loss\":" + str(val_loss) +
                   ",\"train_acc\":" + str(train_accuracy) + ",\"val_acc\":" + str(val_accuracy) + "}")
         else:
-            # avoid log(0) by clamping to epsilon
-            train_loss_value = total_loss / len(train_loader)
-            train_loss_value = max(train_loss_value, np.finfo(float).eps)
-            loss = np.log(train_loss_value)
-
-            val_loss_value = max(float(val_loss), np.finfo(float).eps)
-            val_loss = np.log(val_loss_value)
-
             print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(loss)+",\"val_loss\":"+str(val_loss)+"}")
 
 

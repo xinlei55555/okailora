@@ -1,9 +1,7 @@
 package ca.kailo.berkeley
 
-import ca.kailo.berkeley.TrainRestController.Companion
 import ca.kailo.berkeley.api.InferenceAPI
 import ca.kailo.berkeley.model.Deployment
-import ca.kailo.berkeley.model.InferenceList200ResponseInner
 import ca.kailo.berkeley.model.InferenceStatus200Response
 import java.io.File
 import java.nio.file.Paths
@@ -43,7 +41,7 @@ class InferenceRestController(
         return ResponseEntity.ok().build()
     }
 
-    override fun inferenceStart(deploymentId: String, body: Any): ResponseEntity<Unit> {
+    override fun inferenceStart(deploymentId: String): ResponseEntity<Unit> {
         val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId)
         val configPath = deploymentRegistry.get(deploymentId)!!.type!!.value.lowercase(Locale.getDefault()) + ".yaml"
 
