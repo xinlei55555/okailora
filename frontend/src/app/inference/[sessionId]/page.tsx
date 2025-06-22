@@ -224,26 +224,19 @@ export default function InferencePage() {
 
 		try {
 			console.log('Starting inference process...');
-			
-			// Get the deployment ID for the selected model
-			const modelDeploymentId = await getDeploymentId(selectedModel);
-			
-			if (!modelDeploymentId) {
-				console.error('Could not find deployment ID for selected model:', selectedModel);
-				alert('Failed to start inference: Model deployment not found. Please try selecting a different model.');
-				return;
-			}
-			
+
+			// Use the selected model's ID directly as the deployment ID
+			const modelDeploymentId = selectedModel;
+
 			console.log(`Using model deployment ID: ${modelDeploymentId} for model: ${selectedModel}`);
-			
-			// Call the backend inference start with the model's deployment ID
+
+			// Call the backend inference start with the selected model's ID as deployment ID
 			const response = await InferenceService.inferenceStart(modelDeploymentId);
-			
+
 			console.log('Inference started successfully:', response);
-			
+
 			// Navigate directly to the inference results page
 			router.push(`/inference-results/${sessionId}`);
-			
 		} catch (error) {
 			console.error('Failed to start inference:', error);
 			// You might want to show an error message to the user here
