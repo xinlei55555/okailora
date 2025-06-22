@@ -283,6 +283,54 @@ export default function FinetunePage() {
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
+  // Function to determine model type based on selected model
+  const getModelType = (modelId: string): 'classification' | 'segmentation' | 'generation' | 'bbox' => {
+    const model = allModels.find(m => m.id === modelId);
+    if (!model) return 'generation'; // default fallback
+    
+    // Map based on model tags and name
+    if (model.tags.includes('bert') || model.tags.includes('classification') || model.name.toLowerCase().includes('clinical')) {
+      return 'classification';
+    }
+    if (model.tags.includes('segmentation') || model.name.toLowerCase().includes('segment')) {
+      return 'segmentation';
+    }
+    if (model.tags.includes('bbox') || model.name.toLowerCase().includes('detection')) {
+      return 'bbox';
+    }
+    // Default to generation for GPT-like models and others
+    return 'generation';
+  };
+
+  // Function to start training
+  const handleStartTraining = async () => {
+    if (!selectedModel) {
+      console.error('No model selected');
+      return;
+    }
+
+    try {
+      console.log('Starting training process...');
+      
+      const modelType = getModelType(selectedModel);
+      console.log(`Model type determined: ${modelType} for model: ${selectedModel} - sending train start request`);
+      
+      const response = await TrainService.trainStart(sessionId, {
+        model_type: modelType
+      });
+      
+      console.log('Training started successfully:', response);
+      
+      // Navigate to the training loop page
+      router.push(`/finetune-loop/${sessionId}`);
+      
+    } catch (error) {
+      console.error('Failed to start training:', error);
+      // You might want to show an error message to the user here
+      alert('Failed to start training. Please try again.');
+    }
+  };
+
   // Navigation component
   const renderNavigationBar = () => {
     const baseButtonClass = "px-6 py-2 rounded-lg transition-colors font-medium";
@@ -358,7 +406,7 @@ export default function FinetunePage() {
               ← Back to Configuration
             </button>
             <button
-              onClick={() => router.push(`/finetune-loop/${sessionId}`)}
+              onClick={handleStartTraining}
               className={specialButtonClass}
             >
               🚀 Start Fine-tuning
