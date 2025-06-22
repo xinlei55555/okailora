@@ -169,6 +169,12 @@ export default function FinetunePage() {
   // Handle file upload (just store locally, don't upload to backend yet)
   const handleFileUpload = async (files: FileList) => {
     Array.from(files).forEach((file) => {
+      // Check if file is a zip file
+      if (!file.name.toLowerCase().endsWith('.zip') && file.type !== 'application/zip' && file.type !== 'application/x-zip-compressed') {
+        alert(`File "${file.name}" is not a ZIP file. Please upload ZIP files only.`);
+        return;
+      }
+
       const fileId = Math.random().toString(36).substr(2, 9);
       const uploadedFile: UploadedFile = {
         id: fileId,
@@ -783,11 +789,11 @@ export default function FinetunePage() {
               multiple
               className="hidden"
               onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-              accept=".csv,.json,.txt,.jsonl"
+              accept=".zip"
             />
           </div>
           <div className="text-sm text-gray-500">
-            Supported formats: CSV, JSON, TXT, JSONL (Max 100MB per file)
+            Supported formats: ZIP files only (Max 100MB per file)
           </div>
         </div>
       </div>
@@ -804,7 +810,7 @@ export default function FinetunePage() {
               >
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
-                    <div className="text-2xl">📄</div>
+                    <div className="text-2xl">�</div>
                     <div>
                       <div className="font-medium">{file.name}</div>
                       <div className="text-sm text-gray-400">
