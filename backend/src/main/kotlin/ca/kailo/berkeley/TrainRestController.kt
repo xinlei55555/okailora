@@ -31,8 +31,7 @@ class TrainRestController(
     private val trainingJobs = ConcurrentHashMap<String, Future<*>>()
 
     // now hold mutable lists so we can append new DataPoints
-    private val valLoss = ConcurrentHashMap<String, MutableList<DataPoint>>()
-    private val trainLoss = ConcurrentHashMap<String, MutableList<DataPoint>>()
+    private val metrics = ConcurrentHashMap<String, MutableList<LogSchema>>()
 
     override fun trainUploadData(deploymentId: String, file: Resource?): ResponseEntity<Unit> {
         storage.saveData(Storage.StorageType.TRAIN, deploymentId, file!!)
@@ -71,8 +70,7 @@ class TrainRestController(
         deploymentRegistry.put(deployment)
 
         // initialize empty, thread-safe lists for metrics
-        trainLoss[deploymentId] = CopyOnWriteArrayList()
-        valLoss[deploymentId] = CopyOnWriteArrayList()
+        metrics[deploymentId] = CopyOnWriteArrayList()
 
         val processBuilder = ProcessBuilder(
             "venv/bin/python", "-u",
@@ -98,8 +96,7 @@ class TrainRestController(
                         if (line!!.startsWith("pipe:")) {
                             val json  = line!!.removePrefix("pipe:")
                             val entry = objectMapper.readValue(json, LogSchema::class.java)
-                            trainLoss[deploymentId]!!.add(DataPoint(entry.epoch, entry.trainLoss))
-                            valLoss  [deploymentId]!!.add(DataPoint(entry.epoch, entry.valLoss))
+                            metrics[deploymentId]!!.add(entry)
                             logger.info("LOGGING POINT: {}", entry)
                         }
                     }
@@ -123,26 +120,30 @@ class TrainRestController(
         val finished = trainingJobs[deploymentId]?.isDone ?: false
 
         // safely grab whatever we have so far (or empty)
-        val valPts = valLoss[deploymentId].orEmpty()
-        val trainPts = trainLoss[deploymentId].orEmpty()
+        val pts = metrics[deploymentId].orEmpty()
 
-        val valMetric = valPts.sortedBy { it.epoch }.map { it.value }.toList()
-        val trainMetric = trainPts.sortedBy { it.epoch }.map { it.value }.toList()
+        val valLoss = pts.sortedBy { it.epoch }.map { it.valLoss }.toList()
+        val trainLoss = pts.sortedBy { it.epoch }.map { it.trainLoss }.toList()
+        val valAcc = pts.sortedBy { it.epoch }.map { it.valAcc }.filterNotNull().toList()
+        val trainAcc = pts.sortedBy { it.epoch }.map { it.trainAcc }.filterNotNull().toList()
+
 
         return ResponseEntity.ok(
             TrainStatus200Response(
                 finished,
-                valMetric,
-                trainMetric
+                valLoss,
+                trainLoss,
+                valAcc,
+                trainAcc
             )
         )
     }
 
-    data class DataPoint(val epoch: Int, val value: Float)
-
     data class LogSchema(
         val epoch: Int,
         @JsonProperty("train_loss") val trainLoss: Float,
-        @JsonProperty("val_loss") val valLoss: Float
+        @JsonProperty("val_loss") val valLoss: Float,
+        @JsonProperty("train_acc") val trainAcc: Float?,
+        @JsonProperty("val_acc") val valAcc: Float?
     )
 }

@@ -110,6 +110,16 @@ paths:
                     items:
                       type: number
                       format: float
+                  val_acc:
+                    type: array
+                    items:
+                      type: number
+                      format: float
+                  train_acc:
+                    type: array
+                    items:
+                      type: number
+                      format: float
 
   /inference/list:
     get:
