@@ -61,7 +61,7 @@ export default function MetricChart({ datasets, title }: MetricChartProps) {
   return (
     <div className="h-full bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300 flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-100">{title}</h3>
+        <h3 className="text-base font-semibold text-gray-100">{title}</h3>
         <div className="flex items-center space-x-3">
           {datasets.map(ds => ds.data.length > 0 && (
             <div key={ds.label} className="flex items-center space-x-2">
@@ -134,7 +134,7 @@ export function PlaceholderChart({ title, color }: { title: string; color: strin
   return (
     <div className="h-full bg-gray-800/50 rounded-xl p-3 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300 flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-semibold text-gray-100">{title}</h3>
+        <h3 className="text-sm font-semibold text-gray-100">{title}</h3>
         <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded-full">Coming Soon</span>
       </div>
       
