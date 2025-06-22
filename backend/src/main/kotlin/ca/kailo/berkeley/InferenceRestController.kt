@@ -41,7 +41,7 @@ class InferenceRestController(
         return ResponseEntity.ok().build()
     }
 
-    override fun inferenceStart(deploymentId: String, body: Any): ResponseEntity<Unit> {
+    override fun inferenceStart(deploymentId: String): ResponseEntity<Unit> {
         val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId)
         val configPath = deploymentRegistry.get(deploymentId)!!.type!!.value.lowercase(Locale.getDefault()) + ".yaml"
 
