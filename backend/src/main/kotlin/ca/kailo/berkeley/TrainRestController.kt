@@ -64,9 +64,9 @@ class TrainRestController(
         }
         // ---------------------------------------------------------------
 
-        val type = Deployment.Type.of(trainStartRequest.modelType.value)
+        val type = Deployment.Type.entries.firstOrNull { it.value.equals(trainStartRequest.modelType.value, ignoreCase = true) }
             ?: throw IllegalArgumentException("Unknown model type")
-        val deployment = Deployment(deploymentId, type, "sample description")
+        val deployment = Deployment("Sample Name", deploymentId, type, "Sample description", 0, "MIT")
         deploymentRegistry.put(deployment)
 
         // initialize empty, thread-safe lists for metrics

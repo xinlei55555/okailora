@@ -1,5 +1,6 @@
 package ca.kailo.berkeley
 
+import ca.kailo.berkeley.model.Deployment
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -31,7 +32,7 @@ class DeploymentRegistry {
             try {
                 val yamlParser = mapper.factory.createParser(file)
                 val loaded = mapper.readValues<List<Deployment>>(yamlParser).readAll().firstOrNull()
-                loaded?.forEach { deployments[it.id] = it }
+                loaded?.forEach { deployments[it.deploymentId!!] = it }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -41,7 +42,7 @@ class DeploymentRegistry {
     fun get(deploymentId: String): Deployment? = deployments[deploymentId]
 
     fun put(deployment: Deployment) {
-        deployments[deployment.id] = deployment
+        deployments[deployment.deploymentId!!] = deployment
         saveToFile()
     }
 
