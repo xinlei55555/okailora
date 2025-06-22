@@ -1,5 +1,7 @@
 package ca.kailo.berkeley
 
+import ca.kailo.berkeley.TrainRestController.Companion
+import ca.kailo.berkeley.TrainRestController.LogSchema
 import ca.kailo.berkeley.api.InferenceAPI
 import ca.kailo.berkeley.model.Deployment
 import ca.kailo.berkeley.model.InferenceStatus200Response
@@ -23,7 +25,7 @@ class InferenceRestController(
 ) : InferenceAPI {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(TrainRestController::class.java)
+        private val logger = LoggerFactory.getLogger(InferenceRestController::class.java)
     }
 
     // thread‐pool for running inference jobs
@@ -81,12 +83,22 @@ class InferenceRestController(
         val future: Future<*> = executor.submit {
             try {
                 val process = processBuilder.start()
+
+                process.inputStream.bufferedReader().use { reader ->
+                    var line: String?
+                    logger.info(">> started reading inference output")
+                    while (reader.readLine().also { line = it } != null) {
+                        logger.info(">> got line: {}", line)
+                    }
+                }
+
                 val exitCode = process.waitFor()
                 if (exitCode != 0) {
-                    System.err.println("Inference for $deploymentId failed with exit code $exitCode")
+                    logger.error("Training for {} failed with exit code {}", deploymentId, exitCode)
                 }
+                logger.info("Finished!")
             } catch (e: Exception) {
-                e.printStackTrace()
+                logger.error("Error in training thread for {}", deploymentId, e)
             }
         }
         inferenceJobs[deploymentId] = future
