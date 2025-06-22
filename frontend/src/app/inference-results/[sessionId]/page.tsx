@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { InferenceService } from '@/api/services/InferenceService';
 
 interface BackendResult {
@@ -13,10 +13,10 @@ interface BackendResult {
 export default function InferenceResultsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const sessionId = params.sessionId as string; // This is the workflow session ID from the URL
   
-  // Get the actual deployment ID from sessionStorage where it was stored by the inference page
-  // This fixes the issue where sessionId was incorrectly being used as deploymentId
+  // Get the deployment ID from URL parameters
   const [deploymentId, setDeploymentId] = useState<string | null>(null);
   const [results, setResults] = useState<BackendResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,23 +24,25 @@ export default function InferenceResultsPage() {
   const [selectedTab, setSelectedTab] = useState<'gallery' | 'analytics' | 'export'>('gallery');
 
   useEffect(() => {
-    // Retrieve deployment ID from sessionStorage
-    const storedDeploymentId = sessionStorage.getItem(`inference_deployment_${sessionId}`);
+    // Get deployment ID from URL parameters
+    const urlDeploymentId = searchParams.get('deploymentId');
     
-    if (!storedDeploymentId) {
-      console.error('[InferenceResults] No deployment ID found for session:', sessionId);
+    if (!urlDeploymentId) {
+      console.error('[InferenceResults] No deployment ID found in URL parameters for session:', sessionId);
       setError('No deployment ID found. Please start inference again.');
       setLoading(false);
       return;
     }
     
-    setDeploymentId(storedDeploymentId);
+    // Decode the deployment ID in case it was URL encoded
+    const decodedDeploymentId = decodeURIComponent(urlDeploymentId);
+    setDeploymentId(decodedDeploymentId);
     
-    console.log(`[InferenceResults] Starting to fetch results for deployment: ${storedDeploymentId}`);
+    console.log(`[InferenceResults] Starting to fetch results for deployment: ${decodedDeploymentId}`);
     setLoading(true);
     setError(null);
     
-    InferenceService.inferenceStatus(storedDeploymentId)
+    InferenceService.inferenceStatus(decodedDeploymentId)
       .then((res) => {
         console.log('[InferenceResults] Raw API response:', res);
         console.log('[InferenceResults] Response type:', typeof res);
@@ -85,7 +87,7 @@ export default function InferenceResultsPage() {
         setError('Failed to fetch results.');
         setLoading(false);
       });
-  }, [sessionId]); // Changed from deploymentId to sessionId
+  }, [sessionId, searchParams]); // Updated dependencies
 
   // Gallery Tab: Scrollable grid of image results
   const renderGalleryTab = () => (

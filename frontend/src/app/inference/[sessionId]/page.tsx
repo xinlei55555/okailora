@@ -235,11 +235,9 @@ export default function InferencePage() {
 
 			console.log('Inference started successfully:', response);
 
-			// Store the deployment ID in sessionStorage for the results page to retrieve
-			sessionStorage.setItem(`inference_deployment_${sessionId}`, modelDeploymentId);
-
-			// Navigate to the inference results page using the session ID
-			router.push(`/inference-results/${sessionId}`);
+			// Navigate to the inference results page with deployment ID as URL parameter
+			const encodedDeploymentId = encodeURIComponent(modelDeploymentId);
+			router.push(`/inference-results/${sessionId}?deploymentId=${encodedDeploymentId}`);
 		} catch (error) {
 			console.error('Failed to start inference:', error);
 			// You might want to show an error message to the user here
