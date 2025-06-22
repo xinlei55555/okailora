@@ -292,10 +292,13 @@ export default function Home() {
             {/* Core AI Workflow Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { title: "Train Model", desc: "Start training from scratch with your data", icon: "🚀", colorClass: "bg-blue-500", handler: () => handleTrainClick(router) },
-                { title: "Fine-tune", desc: "Improve existing models with new data", icon: "⚡", colorClass: "bg-purple-500", handler: () => handleFineTuneClick(router) },
-                { title: "Run Inference", desc: "Test and deploy your trained models", icon: "🎯", colorClass: "bg-green-500", handler: () => handleInferenceClick(router) },
-                { title: "Share & Export", desc: "Collaborate and export your models", icon: "📤", colorClass: "bg-orange-500", handler: () => handleShareClick(router) },
+                { title: "Train Model", desc: "Start training from scratch with your data", icon: "🚀", colorClass: "bg-blue-500", handler: async () => await handleTrainClick(router) },
+                { title: "Fine-tune", desc: "Improve existing models with new data", icon: "⚡", colorClass: "bg-purple-500", handler: async () => await handleFineTuneClick(router) },
+                { title: "Run Inference", desc: "Test and deploy your trained models", icon: "🎯", colorClass: "bg-green-500", handler: async () => {
+                  console.log('🎯 Run Inference button clicked');
+                  await handleInferenceClick(router);
+                } },
+                { title: "Share & Export", desc: "Collaborate and export your models", icon: "📤", colorClass: "bg-orange-500", handler: async () => await handleShareClick(router) },
               ].map((action) => (
                 <button
                   key={action.title}
@@ -391,13 +394,25 @@ export default function Home() {
                   <div className="flex space-x-2">
                     {project.status === 'completed' ? (
                       <>
-                        <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm transition-colors">
+                        <button 
+                          onClick={async () => {
+                            console.log('🎯 Project Run Inference button clicked');
+                            await handleInferenceClick(router);
+                          }}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm transition-colors"
+                        >
                           Run Inference
                         </button>
-                        <button className="px-3 py-2 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded text-sm transition-colors">
+                        <button 
+                          onClick={async () => await handleFineTuneClick(router)}
+                          className="px-3 py-2 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded text-sm transition-colors"
+                        >
                           Fine-tune
                         </button>
-                        <button className="px-3 py-2 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded text-sm transition-colors">
+                        <button 
+                          onClick={async () => await handleShareClick(router)}
+                          className="px-3 py-2 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded text-sm transition-colors"
+                        >
                           Export
                         </button>
                       </>
@@ -438,7 +453,10 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-8 text-center">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors mr-4">
+              <button 
+                onClick={async () => await handleTrainClick(router)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors mr-4"
+              >
                 Start Your First Model
               </button>
               <button className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-3 rounded-lg font-medium transition-colors">
