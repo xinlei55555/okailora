@@ -28,7 +28,8 @@ BATCH_SIZE: 1 # batch size
 WEIGHT_DECAY: 0.1 # value found from video mamba
 MAX_GRAD_NORM: 1.0 # max_grad_norm < 0 => inactive
 LR:
-  BASE: 0.000005
+  BASE: 0.005
+  LORA: 0.0005
 
 # SCHEDULER
 SCHEDULER: True

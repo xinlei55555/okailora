@@ -3,15 +3,16 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 class BaseDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
-        self.root_dir = root_dir
+    def __init__(self, data_root_dir, transform=None):
+        self.data_root_dir = data_root_dir
         self.transform = transform if transform else self._base_reshape(img_shape=224)
         self.samples = self._scan_files()
+        print(f"Found {len(self.samples)} samples in {data_root_dir}")
 
     def _scan_files(self):
         return sorted([
-            os.path.join(self.root_dir, fname)
-            for fname in os.listdir(self.root_dir)
+            os.path.join(self.data_root_dir, fname)
+            for fname in os.listdir(self.data_root_dir)
             if fname.lower().endswith(('.png', '.jpg', '.jpeg'))
         ])
 
@@ -30,3 +31,34 @@ class BaseDataset(Dataset):
 
     def __getitem__(self, idx):
         raise NotImplementedError("Use a child class like SegmentationDataset, etc.")
+
+def load_dataset(model_type):
+    from . import (
+        bbox_dataset,
+        generation_dataset,
+        classification_dataset,
+        segmentation_dataset
+    )
+    
+    if model_type == 'bbox':
+        return bbox_dataset.BboxDataset
+    elif model_type == 'generation':
+        return generation_dataset.GenerationDataset
+    elif model_type == 'classification':
+        return classification_dataset.ClassificationDataset
+    elif model_type == 'segmentation':
+        return segmentation_dataset.SegmentationDataset
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+    
+def load_dataset_instance(model_type, data_root_dir, transform=None):
+    dataset_class = load_dataset(model_type)
+    dataset_kwargs = {
+        'data_root_dir': data_root_dir,
+        'transform': transform
+    }
+    if model_type == 'bbox':
+        dataset_kwargs['bbox_json_path'] = os.path.join(data_root_dir, 'bbox.json')
+
+    return dataset_class(data_root_dir=data_root_dir, transform=transform)

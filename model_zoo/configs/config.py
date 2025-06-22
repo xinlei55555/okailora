@@ -28,6 +28,7 @@ def get_cfg(
         use_wandb,
         checkpoint_name,
         dataset_path,
+        inference_mode=False
     ):
     """
     Define configuration.
@@ -44,6 +45,8 @@ def get_cfg(
     _cfg.MODEL.UUID = model_uuid if model_uuid is not None else _cfg.MODEL.UUID
     _cfg.BATCH_SIZE = batch_size if batch_size is not None else _cfg.BATCH_SIZE
     _cfg.WANDB.USE_WANDB = use_wandb if use_wandb is not None else _cfg.WANDB.USE_WANDB
+    _cfg.DATASET.DATASET_PATH = dataset_path if dataset_path is not None else _cfg.DATASET.DATASET_PATH
+    _cfg.EVAL_ONLY = inference_mode if inference_mode is not None else _cfg.EVAL_ONLY
     if use_wandb:
         _cfg.WANDB.WANDB_ID = _cfg.MODEL.UUID
 
