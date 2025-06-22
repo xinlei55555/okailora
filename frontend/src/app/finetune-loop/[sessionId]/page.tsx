@@ -182,10 +182,10 @@ export default function FinetuneLoopPage() {
         />
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''} flex flex-col overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950`}>
+        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''} flex flex-col bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950`}>
           {/* Charts Grid - Takes remaining vertical space with proper height calculation */}
-          <div className="flex-1 p-4 min-h-0">
-            <div className="h-full grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-2">
+          <div className="flex-1 p-4 overflow-auto">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-2 min-h-full">
                 {/* Row 1: Loss and Accuracy */}
                 <MetricChart
                   datasets={[
