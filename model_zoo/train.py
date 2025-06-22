@@ -175,12 +175,27 @@ def inference(config):
         config.MODEL.NUM_CLASSES = num_classes
         config.freeze()
     
-    
+    inference_loader = DataLoader(
+        dataset_class, batch_size=1, shuffle=False,)
 
     model = load_model(config, inference_mode=True)
     model.to(device)
     model.eval()
     
+    for i, batch in enumerate(inference_loader):
+        inputs, model_paths = batch
+        inputs = inputs.to(device)
+
+        with torch.no_grad():
+            outputs = model(x=inputs)
+
+            if config.MODEL_NAME == 'classification':
+                outputs = torch.argmax(outputs, dim=1)
+            print(f"[INFO] Inference {i+1}/{len(inference_loader)}: {model_paths[0]}")
+            print(f"[INFO] Model output: {outputs}")
+
+    print("[INFO] Inference completed.")
+
 
 def main():
     config = parse_args()
