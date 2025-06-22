@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useChatContext } from '@/components/ChatWidget';
 import { TrainService } from '@/api';
-import { MetricPoint, TrainingStatus, SystemResources, ViewMode, ChartDataset } from './types';
+import { MetricPoint, TrainingStatus, SystemResources, ChartDataset } from './types';
 import { formatTime, formatNumber } from './utils';
 import TrainingHeader from './TrainingHeader';
 import Sidebar from './Sidebar';
-import ControlsPanel from './ControlsPanel';
-import MetricChart, { PlaceholderChart } from './MetricChart';
+import MetricChart from './MetricChart';
+import ConfusionMatrix from './ConfusionMatrix';
+import ROCCurve from './ROCCurve';
 import LogsModal from './LogsModal';
 import ConfigModal from './ConfigModal';
 
@@ -36,8 +37,6 @@ export default function FinetuneLoopPage() {
   const [valLossData, setValLossData] = useState<MetricPoint[]>([]);
   const [trainAccData, setTrainAccData] = useState<MetricPoint[]>([]);
   const [valAccData, setValAccData] = useState<MetricPoint[]>([]);
-  const [viewMode, setViewMode] = useState<'realtime' | 'epoch' | 'step'>('realtime');
-  const [autoScroll, setAutoScroll] = useState(true);
 
   // UI state
   const [showConfig, setShowConfig] = useState(false);
@@ -184,18 +183,9 @@ export default function FinetuneLoopPage() {
 
         {/* Main Content */}
         <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''} flex flex-col overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950`}>
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-8 space-y-8">
-              <ControlsPanel
-                viewMode={viewMode}
-                setViewMode={setViewMode}
-                trainingStatus={trainingStatus}
-                autoScroll={autoScroll}
-                setAutoScroll={setAutoScroll}
-              />
-
-              {/* Charts Grid */}
-              <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-2">
+          {/* Charts Grid - Takes remaining vertical space with proper height calculation */}
+          <div className="flex-1 p-4 min-h-0">
+            <div className="h-full grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-2">
                 {/* Row 1: Loss and Accuracy */}
                 <MetricChart
                   datasets={[
@@ -212,10 +202,9 @@ export default function FinetuneLoopPage() {
                   title="Model Accuracy"
                 />
                 
-                {/* Row 2: Learning Rate and GPU Utilization */}
-                <PlaceholderChart title="Learning Rate Schedule" color="#8B5CF6" />
-                <PlaceholderChart title="GPU Utilization" color="#F97316" />
-              </div>
+                {/* Row 2: ROC Curve and Confusion Matrix */}
+                <ROCCurve />
+                <ConfusionMatrix />
             </div>
           </div>
         </main>
