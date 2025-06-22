@@ -1,9 +1,7 @@
 package ca.kailo.berkeley
 
-import ca.kailo.berkeley.TrainRestController.Companion
 import ca.kailo.berkeley.api.InferenceAPI
 import ca.kailo.berkeley.model.Deployment
-import ca.kailo.berkeley.model.InferenceList200ResponseInner
 import ca.kailo.berkeley.model.InferenceStatus200Response
 import java.io.File
 import java.nio.file.Paths
