@@ -317,32 +317,37 @@ export default function FinetuneLoopPage() {
               </div>
             </div>
 
-            {/* Current Metrics */}
+            {/* System Resources */}
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                Current Metrics
+                System Resources
               </h3>
               <div className="space-y-3">
-                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">Accuracy</span>
-                    <span className="text-lg font-semibold text-green-400">
-                      {accuracyData.length > 0 ? formatNumber(accuracyData[accuracyData.length - 1].value, 3) : '0.000'}
-                    </span>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-400">GPU Memory</span>
+                    <span className="text-sm">14.2 / 16.0 GB</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-1">
+                    <div className="bg-yellow-500 h-1 rounded-full" style={{ width: '89%' }}></div>
                   </div>
                 </div>
-                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">Loss</span>
-                    <span className="text-lg font-semibold text-red-400">
-                      {lossData.length > 0 ? formatNumber(lossData[lossData.length - 1].value, 3) : '0.000'}
-                    </span>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-400">CPU Usage</span>
+                    <span className="text-sm">67%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-1">
+                    <div className="bg-blue-500 h-1 rounded-full" style={{ width: '67%' }}></div>
                   </div>
                 </div>
-                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-400">Learning Rate</span>
-                    <span className="text-sm font-mono">{trainingStatus.learningRate.toExponential(2)}</span>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-400">Disk I/O</span>
+                    <span className="text-sm">24%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-1">
+                    <div className="bg-green-500 h-1 rounded-full" style={{ width: '24%' }}></div>
                   </div>
                 </div>
               </div>
@@ -383,42 +388,6 @@ export default function FinetuneLoopPage() {
                   <span>📱</span>
                   <span>Setup Notifications</span>
                 </button>
-              </div>
-            </div>
-
-            {/* System Resources */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                System Resources
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-gray-400">GPU Memory</span>
-                    <span className="text-sm">14.2 / 16.0 GB</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-1">
-                    <div className="bg-yellow-500 h-1 rounded-full" style={{ width: '89%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-gray-400">CPU Usage</span>
-                    <span className="text-sm">67%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-1">
-                    <div className="bg-blue-500 h-1 rounded-full" style={{ width: '67%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-gray-400">Disk I/O</span>
-                    <span className="text-sm">24%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-1">
-                    <div className="bg-green-500 h-1 rounded-full" style={{ width: '24%' }}></div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
