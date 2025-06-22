@@ -139,6 +139,11 @@ class TrainRestController(
         )
     }
 
+    override fun trainElaborate(deploymentId: String, deployment: Deployment): ResponseEntity<Unit> {
+        deploymentRegistry.put(deployment)
+        return ResponseEntity.ok().build()
+    }
+
     data class LogSchema(
         val epoch: Int,
         @JsonProperty("train_loss") val trainLoss: Float,

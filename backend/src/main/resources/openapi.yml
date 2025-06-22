@@ -78,6 +78,28 @@ paths:
         default:
           description: Unexpected error
 
+  /train/elaborate:
+    post:
+      tags: [Train]
+      summary: Train elaborate
+      description: Elaborate with more details on a train job
+      operationId: train_elaborate
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+      responses:
+        '200':
+          description: Done
+
   /train/status:
     post:
       tags: [ Train ]
