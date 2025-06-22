@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Model } from '@/utils/types';
-import { allModels } from '@/utils/models';
+import { allModels, refreshAllModels } from '@/utils/models';
 import FilterDropdown from './FilterDropdown';
 import NotificationBanner from './NotificationBanner';
 
@@ -31,6 +31,22 @@ export default function ModelSelection({
 	const [showTagFilters, setShowTagFilters] = useState(false);
 	const [showLicenseFilters, setShowLicenseFilters] = useState(false);
 	const [showRecommendationsBanner, setShowRecommendationsBanner] = useState(true);
+	const [modelsRefreshed, setModelsRefreshed] = useState(false);
+
+	// Refresh models from API on component mount
+	useEffect(() => {
+		const refreshModels = async () => {
+			try {
+				await refreshAllModels();
+				setModelsRefreshed(true);
+			} catch (error) {
+				console.error('Failed to refresh models:', error);
+				setModelsRefreshed(true); // Still set to true to continue with fallback models
+			}
+		};
+		
+		refreshModels();
+	}, []);
 
 	// Get all unique tags and licenses
 	const allTags = Array.from(new Set(allModels.flatMap(model => model.tags))).sort();

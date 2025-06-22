@@ -1,7 +1,70 @@
 import { Model } from './types';
+import { InferenceService } from '../api/services/InferenceService';
+import { Deployment } from '../api/models/Deployment';
 
-// Our custom models
-const ourModels: Model[] = [
+// Helper function to generate tags based on deployment type and name
+function generateTags(deployment: Deployment): string[] {
+  const tags: string[] = ['custom'];
+  
+  // Add tags based on deployment type
+  if (deployment.type) {
+    tags.push(deployment.type);
+  }
+  
+  // Add tags based on common patterns in the name
+  const name = deployment.name?.toLowerCase() || '';
+  if (name.includes('healthcare') || name.includes('medical') || name.includes('clinical')) {
+    tags.push('healthcare');
+  }
+  if (name.includes('bert')) {
+    tags.push('bert');
+  }
+  if (name.includes('t5')) {
+    tags.push('t5');
+  }
+  if (name.includes('gpt')) {
+    tags.push('gpt');
+  }
+  if (name.includes('llm')) {
+    tags.push('llm');
+  }
+  if (name.includes('diagnosis')) {
+    tags.push('diagnosis');
+  }
+  if (name.includes('qa') || name.includes('question')) {
+    tags.push('qa');
+  }
+  
+  return tags;
+}
+
+// Helper function to format download count
+function formatDownloads(downloads?: number): string {
+  if (!downloads) return '0';
+  if (downloads >= 1000000) {
+    return `${(downloads / 1000000).toFixed(1)}M`;
+  }
+  if (downloads >= 1000) {
+    return `${(downloads / 1000).toFixed(1)}K`;
+  }
+  return downloads.toString();
+}
+
+// Transform Deployment to Model
+function transformDeploymentToModel(deployment: Deployment): Model {
+  return {
+    id: deployment.deployment_id || `okailora/${deployment.name || 'unknown'}`,
+    name: deployment.name || 'Unknown Model',
+    description: deployment.description || 'No description available',
+    downloads: formatDownloads(deployment.downloads),
+    tags: generateTags(deployment),
+    license: deployment.license || 'Apache 2.0',
+    isOurs: true
+  };
+}
+
+// Fallback models in case API fails
+const fallbackOurModels: Model[] = [
   {
     id: "okailora/HealthcareGPT-7B",
     name: "HealthcareGPT 7B",
@@ -40,8 +103,27 @@ const ourModels: Model[] = [
   }
 ];
 
-// Hugging Face models
-const huggingFaceModels: Model[] = [
+// Async function to get our models from the API
+export async function getOurModels(): Promise<Model[]> {
+  try {
+    const deployments = await InferenceService.inferenceList();
+    
+    // Check if the response is an array (success case)
+    if (Array.isArray(deployments)) {
+      return deployments.map(transformDeploymentToModel);
+    }
+    
+    // If not an array, fall back to hardcoded models
+    console.warn('API returned unexpected format, using fallback models');
+    return fallbackOurModels;
+  } catch (error) {
+    console.error('Failed to fetch models from API, using fallback models:', error);
+    return fallbackOurModels;
+  }
+}
+
+// Hugging Face models (these remain static)
+export const huggingFaceModels: Model[] = [
   {
     id: "microsoft/DialoGPT-medium",
     name: "DialoGPT Medium",
@@ -98,5 +180,23 @@ const huggingFaceModels: Model[] = [
   }
 ];
 
-// Combined models list
-export const allModels: Model[] = [...ourModels, ...huggingFaceModels];
+// Sync export of all models (includes fallback models initially)
+export const allModels: Model[] = [...fallbackOurModels, ...huggingFaceModels];
+
+// Async function to get all models (our models from API + Hugging Face models)
+export async function getAllModels(): Promise<Model[]> {
+  const ourModels = await getOurModels();
+  return [...ourModels, ...huggingFaceModels];
+}
+
+// Function to update allModels array with fresh data from API
+export async function refreshAllModels(): Promise<void> {
+  try {
+    const freshModels = await getAllModels();
+    // Update the allModels array in place
+    allModels.length = 0;
+    allModels.push(...freshModels);
+  } catch (error) {
+    console.error('Failed to refresh models:', error);
+  }
+}
