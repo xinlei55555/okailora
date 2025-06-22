@@ -145,10 +145,22 @@ export default function FinetuneLoopPage() {
     const allData = datasets.flatMap(ds => ds.data);
     if (allData.length === 0) {
         return (
-            <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 h-full flex items-center justify-center min-h-[24rem]">
+            <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300 min-h-[400px] flex items-center justify-center">
                 <div className="text-center">
-                    <h3 className="text-lg font-semibold text-gray-400">{title}</h3>
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-700/50 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-300 mb-2">{title}</h3>
                     <p className="text-sm text-gray-500">Waiting for training data...</p>
+                    <div className="mt-4 flex justify-center">
+                        <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -159,56 +171,154 @@ export default function FinetuneLoopPage() {
     const range = maxValue - minValue || 1;
 
     return (
-      <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <div className="flex items-center space-x-4">
+      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300 min-h-[400px]">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-100">{title}</h3>
+          <div className="flex items-center space-x-6">
             {datasets.map(ds => ds.data.length > 0 && (
-              <span key={ds.label} className="text-sm text-gray-400 flex items-center">
-                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: ds.color }}></span>
-                {ds.label}: {formatNumber(ds.data[ds.data.length - 1]?.value || 0)}
-              </span>
+              <div key={ds.label} className="flex items-center space-x-2">
+                <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: ds.color }}></span>
+                <span className="text-sm text-gray-300 font-medium">{ds.label}</span>
+                <span className="text-sm text-gray-400 bg-gray-700/50 px-2 py-1 rounded-md">
+                  {formatNumber(ds.data[ds.data.length - 1]?.value || 0)}
+                </span>
+              </div>
             ))}
           </div>
         </div>
         
-        <div className="relative h-64 bg-gray-900 rounded-lg p-4">
-          <svg className="w-full h-full" viewBox="0 0 400 200">
+        <div className="relative h-80 bg-gray-900/50 rounded-lg p-6 border border-gray-700/30">
+          <svg className="w-full h-full" viewBox="0 0 500 300">
             {/* Grid lines */}
-            {[0, 1, 2, 3, 4].map(i => (
-              <line
-                key={`grid-${i}`}
-                x1="0"
-                y1={i * 50}
-                x2="400"
-                y2={i * 50}
-                stroke="#374151"
-                strokeWidth="1"
-                opacity="0.3"
-              />
+            {[0, 1, 2, 3, 4, 5].map(i => (
+              <g key={`grid-${i}`}>
+                <line
+                  x1="0"
+                  y1={i * 60}
+                  x2="500"
+                  y2={i * 60}
+                  stroke="#374151"
+                  strokeWidth="1"
+                  opacity="0.3"
+                />
+                <line
+                  x1={i * 100}
+                  y1="0"
+                  x2={i * 100}
+                  y2="300"
+                  stroke="#374151"
+                  strokeWidth="1"
+                  opacity="0.3"
+                />
+              </g>
             ))}
             
-            {/* Data lines */}
+            {/* Data lines with smooth curves */}
             {datasets.map(ds => ds.data.length > 1 && (
-              <polyline
-                key={ds.label}
-                points={ds.data.map((point, index) => {
-                  const x = (index / (ds.data.length - 1)) * 400;
-                  const y = 200 - ((point.value - minValue) / range) * 200;
-                  return `${x},${y}`;
-                }).join(' ')}
-                fill="none"
-                stroke={ds.color}
-                strokeWidth="2"
-              />
+              <g key={ds.label}>
+                <defs>
+                  <linearGradient id={`gradient-${ds.label}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: ds.color, stopOpacity: 0.3 }} />
+                    <stop offset="100%" style={{ stopColor: ds.color, stopOpacity: 0.05 }} />
+                  </linearGradient>
+                </defs>
+                
+                {/* Area fill */}
+                <path
+                  d={`M ${ds.data.map((point, index) => {
+                    const x = (index / (ds.data.length - 1)) * 500;
+                    const y = 300 - ((point.value - minValue) / range) * 300;
+                    return `${x},${y}`;
+                  }).join(' L ')} L 500,300 L 0,300 Z`}
+                  fill={`url(#gradient-${ds.label})`}
+                />
+                
+                {/* Main line */}
+                <polyline
+                  points={ds.data.map((point, index) => {
+                    const x = (index / (ds.data.length - 1)) * 500;
+                    const y = 300 - ((point.value - minValue) / range) * 300;
+                    return `${x},${y}`;
+                  }).join(' ')}
+                  fill="none"
+                  stroke={ds.color}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ filter: `drop-shadow(0 0 6px ${ds.color}40)` }}
+                />
+                
+                {/* Data points */}
+                {ds.data.slice(-5).map((point, index, arr) => {
+                  const x = ((ds.data.length - arr.length + index) / (ds.data.length - 1)) * 500;
+                  const y = 300 - ((point.value - minValue) / range) * 300;
+                  return (
+                    <circle
+                      key={`point-${ds.label}-${index}`}
+                      cx={x}
+                      cy={y}
+                      r="4"
+                      fill={ds.color}
+                      stroke="#1F2937"
+                      strokeWidth="2"
+                      style={{ filter: `drop-shadow(0 0 4px ${ds.color})` }}
+                    />
+                  );
+                })}
+              </g>
             ))}
           </svg>
           
           {/* Y-axis labels */}
-          <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400 -ml-12">
-            <span>{formatNumber(maxValue, 2)}</span>
-            <span>{formatNumber((maxValue + minValue) / 2, 2)}</span>
-            <span>{formatNumber(minValue, 2)}</span>
+          <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400 -ml-16 py-6">
+            <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber(maxValue, 3)}</span>
+            <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber((maxValue * 3 + minValue) / 4, 3)}</span>
+            <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber((maxValue + minValue) / 2, 3)}</span>
+            <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber((maxValue + minValue * 3) / 4, 3)}</span>
+            <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber(minValue, 3)}</span>
+          </div>
+          
+          {/* X-axis labels */}
+          <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-gray-400 -mb-8 px-6">
+            <span>0</span>
+            <span>{Math.floor(allData.length * 0.25)}</span>
+            <span>{Math.floor(allData.length * 0.5)}</span>
+            <span>{Math.floor(allData.length * 0.75)}</span>
+            <span>{allData.length}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Placeholder chart component for future metrics
+  const renderPlaceholderChart = (title: string, color: string) => {
+    return (
+      <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300 min-h-[400px]">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-100">{title}</h3>
+          <span className="text-sm text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">Coming Soon</span>
+        </div>
+        
+        <div className="relative h-80 bg-gray-900/50 rounded-lg p-6 border border-gray-700/30 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center border-2 border-dashed border-gray-600">
+              <svg className="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h4 className="text-lg font-medium text-gray-300 mb-2">{title}</h4>
+            <p className="text-sm text-gray-500 max-w-xs">
+              This metric will be available in a future update to provide additional training insights.
+            </p>
+            <div className="mt-4">
+              <div className="w-32 h-1 bg-gray-700 rounded-full mx-auto">
+                <div 
+                  className="h-1 rounded-full animate-pulse" 
+                  style={{ backgroundColor: color, width: '40%' }}
+                ></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -385,98 +495,135 @@ export default function FinetuneLoopPage() {
         </aside>
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''} flex flex-col overflow-hidden`}>
+        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''} flex flex-col overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950`}>
           <div className="flex-1 overflow-y-auto">
-            <div className="p-8">
+            <div className="p-8 space-y-8">
               {/* Controls */}
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="flex bg-gray-800 rounded-lg p-1">
+              <div className="flex items-center justify-between bg-gray-800/30 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
+                <div className="flex items-center space-x-6">
+                  <div className="flex bg-gray-800/70 rounded-lg p-1 border border-gray-700/50">
                     <button
                       onClick={() => setViewMode('realtime')}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${
-                        viewMode === 'realtime' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        viewMode === 'realtime' ? 'bg-green-600 text-white shadow-lg shadow-green-600/25' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                       }`}
                     >
-                      Real-time
+                      <span className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-current rounded-full animate-pulse"></div>
+                        <span>Real-time</span>
+                      </span>
                     </button>
                     <button
                       onClick={() => setViewMode('epoch')}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${
-                        viewMode === 'epoch' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        viewMode === 'epoch' ? 'bg-green-600 text-white shadow-lg shadow-green-600/25' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                       }`}
                     >
                       By Epoch
                     </button>
                     <button
                       onClick={() => setViewMode('step')}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${
-                        viewMode === 'step' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        viewMode === 'step' ? 'bg-green-600 text-white shadow-lg shadow-green-600/25' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                       }`}
                     >
                       By Step
                     </button>
                   </div>
+                  
+                  <div className="flex items-center space-x-2 text-sm text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Live Updates: {trainingStatus.isRunning ? 'Active' : 'Paused'}</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-4">
-                  <label className="flex items-center space-x-2 text-sm">
+                  <label className="flex items-center space-x-3 text-sm cursor-pointer">
                     <input
                       type="checkbox"
                       checked={autoScroll}
                       onChange={(e) => setAutoScroll(e.target.checked)}
-                      className="rounded border-gray-600 bg-gray-700"
+                      className="w-4 h-4 rounded border-gray-600 bg-gray-700/50 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     />
-                    <span>Auto-scroll</span>
+                    <span className="text-gray-300">Auto-scroll</span>
                   </label>
-                  <button className="text-sm text-gray-400 hover:text-white transition-colors">
-                    📷 Screenshot
+                  <div className="h-4 w-px bg-gray-600"></div>
+                  <button className="flex items-center space-x-2 text-sm text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-gray-700/50">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Screenshot</span>
                   </button>
-                  <button className="text-sm text-gray-400 hover:text-white transition-colors">
-                    💾 Save View
+                  <button className="flex items-center space-x-2 text-sm text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-gray-700/50">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span>Export</span>
                   </button>
                 </div>
               </div>
 
-              {/* Charts */}
-              <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
-                {renderChart(
-                    [
-                        { data: trainAccData, color: '#10B981', label: 'Train Accuracy' },
-                        { data: valAccData, color: '#F59E0B', label: 'Validation Accuracy' }
-                    ],
-                    'Accuracy'
-                )}
+              {/* Charts Grid */}
+              <div className="grid gap-8 grid-cols-1 lg:grid-cols-2 2xl:grid-cols-2">
+                {/* Row 1: Loss and Accuracy */}
                 {renderChart(
                     [
                         { data: trainLossData, color: '#3B82F6', label: 'Train Loss' },
                         { data: valLossData, color: '#EF4444', label: 'Validation Loss' }
                     ],
-                    'Loss'
+                    'Training Loss'
                 )}
+                {renderChart(
+                    [
+                        { data: trainAccData, color: '#10B981', label: 'Train Accuracy' },
+                        { data: valAccData, color: '#F59E0B', label: 'Validation Accuracy' }
+                    ],
+                    'Model Accuracy'
+                )}
+                
+                {/* Row 2: Learning Rate and GPU Utilization */}
+                {renderPlaceholderChart('Learning Rate Schedule', '#8B5CF6')}
+                {renderPlaceholderChart('GPU Utilization', '#F97316')}
               </div>
 
               {/* Logs Modal */}
               {showLogs && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-gray-900 rounded-lg border border-gray-700 w-full max-w-4xl max-h-[80vh] flex flex-col">
-                    <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Training Logs</h3>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="bg-gray-900/95 rounded-2xl border border-gray-700/50 w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl">
+                    <div className="p-6 border-b border-gray-700/50 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-100">Training Logs</h3>
+                      </div>
                       <button
                         onClick={() => setShowLogs(false)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700/50 rounded-lg"
                       >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 bg-gray-950 font-mono text-sm">
+                    <div className="flex-1 overflow-y-auto p-6 bg-gray-950/50 font-mono text-sm">
                       {logMessages.map((message, index) => (
-                        <div key={index} className="text-gray-300 mb-1">
-                          [{new Date().toLocaleTimeString()}] {message}
+                        <div key={index} className="text-gray-300 mb-2 flex items-start space-x-3">
+                          <span className="text-gray-500 text-xs mt-0.5 min-w-0">[{new Date().toLocaleTimeString()}]</span>
+                          <span className="flex-1">{message}</span>
                         </div>
                       ))}
+                      {logMessages.length === 0 && (
+                        <div className="text-center text-gray-500 py-8">
+                          <div className="text-4xl mb-4">📝</div>
+                          <p>No log messages yet. Training logs will appear here as they become available.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -484,29 +631,61 @@ export default function FinetuneLoopPage() {
 
               {/* Config Modal */}
               {showConfig && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                  <div className="bg-gray-900 rounded-lg border border-gray-700 w-full max-w-2xl">
-                    <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">Training Configuration</h3>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="bg-gray-900/95 rounded-2xl border border-gray-700/50 w-full max-w-3xl shadow-2xl">
+                    <div className="p-6 border-b border-gray-700/50 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-xl font-semibold text-gray-100">Training Configuration</h3>
+                      </div>
                       <button
                         onClick={() => setShowConfig(false)}
-                        className="text-gray-400 hover:text-white"
+                        className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700/50 rounded-lg"
                       >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div><span className="text-gray-400">Model:</span> HealthcareGPT-7B</div>
-                        <div><span className="text-gray-400">Learning Rate:</span> 1e-5</div>
-                        <div><span className="text-gray-400">Batch Size:</span> 8</div>
-                        <div><span className="text-gray-400">Epochs:</span> 3</div>
-                        <div><span className="text-gray-400">Weight Decay:</span> 0.01</div>
-                        <div><span className="text-gray-400">Warmup Steps:</span> 500</div>
-                        <div><span className="text-gray-400">Data Files:</span> 3</div>
-                        <div><span className="text-gray-400">Total Samples:</span> 12,450</div>
+                    <div className="p-8">
+                      <div className="grid grid-cols-2 gap-6 text-sm">
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Model</div>
+                          <div className="text-white font-medium text-lg">HealthcareGPT-7B</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Learning Rate</div>
+                          <div className="text-blue-400 font-medium text-lg">1e-5</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Batch Size</div>
+                          <div className="text-green-400 font-medium text-lg">8</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Epochs</div>
+                          <div className="text-purple-400 font-medium text-lg">3</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Weight Decay</div>
+                          <div className="text-orange-400 font-medium text-lg">0.01</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Warmup Steps</div>
+                          <div className="text-yellow-400 font-medium text-lg">500</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Data Files</div>
+                          <div className="text-cyan-400 font-medium text-lg">3</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-gray-400 text-xs uppercase tracking-wide">Total Samples</div>
+                          <div className="text-pink-400 font-medium text-lg">12,450</div>
+                        </div>
                       </div>
                     </div>
                   </div>
