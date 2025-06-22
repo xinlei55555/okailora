@@ -65,9 +65,9 @@ export default function MetricChart({ datasets, title }: MetricChartProps) {
         <div className="flex items-center space-x-3">
           {datasets.map(ds => ds.data.length > 0 && (
             <div key={ds.label} className="flex items-center space-x-2">
-              <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: ds.color }}></span>
-              <span className="text-sm text-gray-300 font-medium">{ds.label}</span>
-              <span className="text-sm text-gray-400 bg-gray-700/50 px-2 py-1 rounded">
+              <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: ds.color }}></span>
+              <span className="text-xs text-gray-300 font-medium">{ds.label}</span>
+              <span className="text-xs text-gray-400 bg-gray-700/50 px-1.5 py-0.5 rounded">
                 {formatNumber(ds.data[ds.data.length - 1]?.value || 0)}
               </span>
             </div>
