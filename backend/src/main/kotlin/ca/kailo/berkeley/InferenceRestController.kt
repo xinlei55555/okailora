@@ -2,7 +2,7 @@ package ca.kailo.berkeley
 
 import ca.kailo.berkeley.api.InferenceAPI
 import ca.kailo.berkeley.model.InferenceList200ResponseInner
-import ca.kailo.berkeley.model.TrainStatus200Response
+import ca.kailo.berkeley.model.InferenceStatus200Response
 import org.springframework.core.io.Resource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -40,12 +40,14 @@ class InferenceRestController(
     }
 
     override fun inferenceStart(deploymentId: String, body: Any): ResponseEntity<Unit> {
+        val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId)
         val configPath = deploymentRegistry.get(deploymentId)!!.type.path + ".yaml"
         val processBuilder = ProcessBuilder(
-            "python3",
+            "python3", "-u",
             "inference.py",
             "--config", configPath,
-            "--deployment_id", deploymentId
+            "--deployment_id", deploymentId,
+            "--data_path", zipPath
         ).inheritIO()
 
         // submit job asynchronously
@@ -70,9 +72,9 @@ class InferenceRestController(
         return ResponseEntity.noContent().build()
     }
 
-    override fun inferenceStatus(deploymentId: String): ResponseEntity<TrainStatus200Response> {
+    override fun inferenceStatus(deploymentId: String): ResponseEntity<InferenceStatus200Response> {
         val future = inferenceJobs[deploymentId]
         val finished = future?.isDone ?: false
-        return ResponseEntity.ok(TrainStatus200Response(finished))
+        return ResponseEntity.ok(InferenceStatus200Response(finished))
     }
 }

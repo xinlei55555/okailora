@@ -144,7 +144,10 @@ def train(config):
             optimizer.step()
             total_loss += loss.item()
 
-        print(f"[TRAIN] Loss: {total_loss / len(train_loader):.6f}")
+        loss = total_loss / len(train_loader)
+        print(f"[TRAIN] Loss: {loss:.6f}")
+
+        print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(loss)+",\"val_loss\":"+str(val_loss)+"}")
 
         # if config.USE_WANDB:
         #     wandb.log({"epoch": epoch, "train_loss": total_loss /

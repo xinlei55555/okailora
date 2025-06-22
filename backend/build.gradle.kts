@@ -36,8 +36,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    implementation("org.slf4j:slf4j-api:2.0.13")
-    runtimeOnly("org.slf4j:slf4j-simple:2.0.13")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
 }
 
@@ -52,7 +50,12 @@ tasks.withType<Test> {
 }
 
 tasks.bootJar {
-    mainClass = "ca.kailo.berkeley.Application"
+    enabled = true
+    mainClass.set("ca.kailo.berkeley.ApplicationKt") // IMPORTANT
+}
+
+tasks.jar {
+    enabled = false
 }
 
 tasks.openApiGenerate {

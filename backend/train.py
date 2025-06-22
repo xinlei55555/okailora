@@ -1,3 +1,11 @@
 import time
 print("starting train")
-time.sleep(10)
+time.sleep(3)
+print("pipe:{\"epoch\":1,\"train_loss\":1.0,\"val_loss\":0.5}")
+time.sleep(3)
+print("pipe:{\"epoch\":1,\"train_loss\":0.9,\"val_loss\":0.4}")
+time.sleep(3)
+print("pipe:{\"epoch\":1,\"train_loss\":0.8,\"val_loss\":0.3}")
+time.sleep(3)
+print("pipe:{\"epoch\":1,\"train_loss\":0.7,\"val_loss\":0.2}")
+print("done")

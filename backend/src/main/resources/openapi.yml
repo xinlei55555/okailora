@@ -100,7 +100,14 @@ paths:
                 properties:
                   finished:
                     type: boolean
-                required: [ finished ]
+                  metrics:
+                    type: object
+                    properties:
+                      val_loss:
+                        $ref: '#/components/schemas/Metric'
+                      train_loss:
+                        $ref: '#/components/schemas/Metric'
+
 
   /inference/list:
     get:
@@ -228,3 +235,16 @@ paths:
         default:
           description: Unexpected error
 
+components:
+  schemas:
+    Metric:
+      properties:
+        data_points:
+          type: array
+          items:
+            properties:
+              epoch:
+                type: integer
+              value:
+                type: number
+                format: float
