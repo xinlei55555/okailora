@@ -48,7 +48,6 @@ def parse_args():
     print(f'[INFO] Config file: {config}')
     return config
 
-
 def train(config):
     print(f"Running training...")
     train_dataset_class = load_dataset_instance(config.MODEL_NAME, os.path.join(config.DATASET.DATASET_PATH, 'train'))
@@ -76,7 +75,6 @@ def train(config):
         config.defrost()
         config.MODEL.NUM_CLASSES = num_classes
         config.freeze()
-
 
     model = load_model(config, inference_mode=False)
     model.to(device)
@@ -119,13 +117,15 @@ def train(config):
 
     for epoch in range(config.START_EPOCH, config.EPOCH_NUMBER):
         print(f"[INFO] Epoch {epoch}")
-         #Accuracy metrics initialize metric
+        
+        # Initialize accuracy metrics for this epoch
         if config.MODEL_NAME == 'classification':
             train_correct = 0
             train_total = 0
             val_correct = 0
             val_total = 0
 
+        # VALIDATION PHASE
         model.eval()
         optimizer.eval()
         with torch.no_grad():
@@ -138,20 +138,27 @@ def train(config):
                 loss = val_loss_fn(outputs, targets)
                 val_loss += loss.item()
 
+                # Calculate validation accuracy for each batch
+                if config.MODEL_NAME == 'classification':
+                    _, predicted = torch.max(outputs, 1)
+                    targets = targets.view(-1)  # <- this line ensures correct shape
+                    val_correct += (predicted == targets).sum().item()
+                    val_total += targets.size(0)
+
             val_loss /= len(val_loader)
             print(f"[VAL] Loss: {val_loss:.6f}")
             
             if config.MODEL_NAME == 'classification':
-                # val accuracy:
-                _, predicted = torch.max(outputs, 1)
-                val_correct += (predicted == targets).sum().item()
-                val_total += targets.size(0)
+                val_accuracy = val_correct / val_total if val_total > 0 else 0.0
+                print(f"[VAL] Accuracy: {val_accuracy:.4f}")
 
+        # Save checkpoint if validation loss improved
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             save_checkpoint(model, checkpoint_path, num_classes, class_to_idx)
             print(f"[INFO] Checkpoint saved: {checkpoint_path}")
 
+        # TRAINING PHASE
         model.train()
         optimizer.train()
         total_loss = 0
@@ -169,42 +176,41 @@ def train(config):
             optimizer.step()
             total_loss += loss.item()
 
+            # Calculate training accuracy for each batch
             if config.MODEL_NAME == 'classification':
-                # Inside training loop, after loss computation
                 _, predicted = torch.max(outputs, 1)
+                targets = targets.view(-1)  # <- this line ensures correct shape
                 train_correct += (predicted == targets).sum().item()
                 train_total += targets.size(0)
 
-        loss = total_loss / len(train_loader)
-        print(f"[TRAIN] Loss: {loss:.6f}")
+        # Calculate epoch metrics
+        train_loss_avg = total_loss / len(train_loader)
+        print(f"[TRAIN] Loss: {train_loss_avg:.6f}")
 
-        # avoid log(0) by clamping to epsilon
-        train_loss_value = total_loss / len(train_loader)
-        train_loss_value = max(train_loss_value, np.finfo(float).eps)
-        loss = np.log(train_loss_value)
-
-        val_loss_value = max(float(val_loss), np.finfo(float).eps)
-        val_loss = np.log(val_loss_value)
-
+        # Calculate and print training accuracy
         if config.MODEL_NAME == 'classification':
-            train_accuracy = train_correct / train_total
+            train_accuracy = train_correct / train_total if train_total > 0 else 0.0
             print(f"[TRAIN] Accuracy: {train_accuracy:.4f}")
 
-            val_accuracy = val_correct / val_total
-            print(f"[VAL] Accuracy: {val_accuracy:.4f}")
+        # Prepare logged values (avoid log(0) by clamping to epsilon)
+        train_loss_value = max(train_loss_avg, np.finfo(float).eps)
+        logged_train_loss = np.log(train_loss_value)
 
-            # overwrite the pipe with accuracies
-            print("pipe:{\"epoch\":" + str(epoch) + ",\"train_loss\":" + str(loss) + ",\"val_loss\":" + str(val_loss) +
-                  ",\"train_acc\":" + str(train_accuracy) + ",\"val_acc\":" + str(val_accuracy) + "}")
+        val_loss_value = max(float(val_loss), np.finfo(float).eps)
+        logged_val_loss = np.log(val_loss_value)
+
+        # Log metrics
+        if config.MODEL_NAME == 'classification':
+            print("pipe:{\"epoch\":" + str(epoch) + ",\"train_loss\":" + str(logged_train_loss) + 
+                  ",\"val_loss\":" + str(logged_val_loss) + ",\"train_acc\":" + str(train_accuracy) + 
+                  ",\"val_acc\":" + str(val_accuracy) + "}")
         else:
-            print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(loss)+",\"val_loss\":"+str(val_loss)+"}")
-
-
+            print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(logged_train_loss)+
+                  ",\"val_loss\":"+str(logged_val_loss)+"}")
 
 
 def inference(config):
     print('Running inference...')
-    dataset_class = load_dataset_instance(config.MODEL_NAME, config.DATASET.DATASET_PATH, inference=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -228,6 +234,8 @@ def inference(config):
         config.MODEL.NUM_CLASSES = num_classes
         config.freeze()
     
+    dataset_class = load_dataset_instance(config.MODEL_NAME, config.DATASET.DATASET_PATH, inference=True, class_to_idx=class_to_idx)
+
     inference_loader = DataLoader(
         dataset_class, batch_size=1, shuffle=False,)
 
@@ -266,10 +274,11 @@ def inference(config):
             outputs = model(x=inputs)
 
             if config.MODEL_NAME == 'classification':
+                print(f'logits: outputs: {outputs}')
                 outputs = torch.argmax(outputs, dim=1)
-                for output, i in class_to_idx.items():
+                for txt, i in class_to_idx.items():
                     if i == outputs.item():
-                        text_output = output
+                        text_output = txt
                         break
                 print(f"[INFO] Textual model class: {text_output}")
 

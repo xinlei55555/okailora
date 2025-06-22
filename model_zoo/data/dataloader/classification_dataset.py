@@ -6,11 +6,14 @@ import os
 from data.dataloader import BaseDataset
 
 class ClassificationDataset(BaseDataset):
-    def __init__(self, data_root_dir, transform=None, inference=False):
+    def __init__(self, data_root_dir, transform=None, inference=False, class_to_idx=None):
         super().__init__(data_root_dir, transform, inference)
-        self.class_to_idx = {
-            class_name: i for i, class_name in enumerate(sorted(os.listdir(data_root_dir)))
-        }
+        if class_to_idx is not None:
+            self.class_to_idx = class_to_idx
+        else:
+            self.class_to_idx = {
+                class_name: i for i, class_name in enumerate(sorted(os.listdir(data_root_dir)))
+            }
         self.num_classes = len(self.class_to_idx)
     
     def get_num_classes(self):

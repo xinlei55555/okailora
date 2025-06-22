@@ -53,7 +53,7 @@ def load_dataset(model_type):
         raise ValueError(f"Unknown model type: {model_type}")
 
     
-def load_dataset_instance(model_type, data_root_dir, transform=None, inference=False):
+def load_dataset_instance(model_type, data_root_dir, transform=None, inference=False, class_to_idx=None):
     dataset_class = load_dataset(model_type)
     dataset_kwargs = {
         'data_root_dir': data_root_dir,
@@ -61,5 +61,9 @@ def load_dataset_instance(model_type, data_root_dir, transform=None, inference=F
     }
     if model_type == 'bbox':
         dataset_kwargs['bbox_json_path'] = os.path.join(data_root_dir, 'bbox.json')
+    
+    if model_type == 'classification':
+        return dataset_class(data_root_dir=data_root_dir, transform=transform, inference=inference, class_to_idx=class_to_idx)
 
-    return dataset_class(data_root_dir=data_root_dir, transform=transform, inference=inference,)
+    else:
+        return dataset_class(data_root_dir=data_root_dir, transform=transform, inference=inference,)
