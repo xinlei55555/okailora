@@ -241,9 +241,9 @@ export default function FinetunePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="h-screen bg-gray-950 text-white flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+      <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
@@ -267,9 +267,9 @@ export default function FinetunePage() {
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 bg-gray-900 border-r border-gray-800 min-h-screen">
+        <aside className="w-64 bg-gray-900 border-r border-gray-800 flex-shrink-0 overflow-y-auto">
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
@@ -320,9 +320,10 @@ export default function FinetunePage() {
         </aside>
 
         {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''}`}>
-          <div className="p-8">
-            <div className="max-w-4xl mx-auto">
+        <main className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''} flex flex-col overflow-hidden`}>
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-8 pb-6">
+              <div className="max-w-4xl mx-auto">
               {/* Step 1: Model Selection */}
               {currentStep === 1 && (
                 <div className="space-y-6">
@@ -627,17 +628,6 @@ export default function FinetunePage() {
                       )}
                     </div>
                   </div>
-
-                  {selectedModel && (
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => setCurrentStep(2)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
-                      >
-                        Continue to Data Upload →
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -755,23 +745,6 @@ export default function FinetunePage() {
                         </p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <button
-                      onClick={() => setCurrentStep(1)}
-                      className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
-                    >
-                      ← Back to Model Selection
-                    </button>
-                    {uploadedFiles.some(f => f.status === 'completed') && (
-                      <button
-                        onClick={() => setCurrentStep(3)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-                      >
-                        Configure Parameters →
-                      </button>
-                    )}
                   </div>
                 </div>
               )}
@@ -962,21 +935,6 @@ export default function FinetunePage() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex justify-between">
-                    <button
-                      onClick={() => setCurrentStep(2)}
-                      className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
-                    >
-                      ← Back to Data Upload
-                    </button>
-                    <button
-                      onClick={() => setCurrentStep(4)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-                    >
-                      Review & Start Training →
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -1084,19 +1042,6 @@ export default function FinetunePage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between">
-                    <button
-                      onClick={() => setCurrentStep(3)}
-                      className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
-                    >
-                      ← Back to Configuration
-                    </button>
-                    <button
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all font-semibold"
-                    >
-                      🚀 Start Fine-tuning
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -1106,11 +1051,92 @@ export default function FinetunePage() {
                   <div className="text-4xl mb-4">🚧</div>
                   <h2 className="text-xl font-semibold mb-2">Step {currentStep} Coming Soon</h2>
                   <p className="text-gray-400 mb-6">This step is under development</p>
+                </div>
+              )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Sticky Navigation Footer */}
+          <div className="border-t border-gray-800 bg-gray-900/95 backdrop-blur-sm p-4 flex-shrink-0">
+            <div className="max-w-4xl mx-auto">
+              {/* Step 1 Navigation */}
+              {currentStep === 1 && (
+                <div className="flex justify-end">
+                  {selectedModel && (
+                    <button
+                      onClick={() => setCurrentStep(2)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium"
+                    >
+                      Continue to Data Upload →
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2 Navigation */}
+              {currentStep === 2 && (
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
+                  >
+                    ← Back to Model Selection
+                  </button>
+                  {uploadedFiles.some(f => f.status === 'completed') && (
+                    <button
+                      onClick={() => setCurrentStep(3)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                    >
+                      Configure Parameters →
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3 Navigation */}
+              {currentStep === 3 && (
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
+                  >
+                    ← Back to Data Upload
+                  </button>
+                  <button
+                    onClick={() => setCurrentStep(4)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                  >
+                    Review & Start Training →
+                  </button>
+                </div>
+              )}
+
+              {/* Step 4 Navigation */}
+              {currentStep === 4 && (
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => setCurrentStep(3)}
+                    className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
+                  >
+                    ← Back to Configuration
+                  </button>
+                  <button
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg transition-all font-semibold"
+                  >
+                    🚀 Start Fine-tuning
+                  </button>
+                </div>
+              )}
+
+              {/* Step > 4 Navigation */}
+              {currentStep > 4 && (
+                <div className="flex justify-center">
                   <button
                     onClick={() => setCurrentStep(4)}
                     className="border border-gray-600 text-gray-300 hover:bg-gray-700 px-6 py-2 rounded-lg transition-colors"
                   >
-                    Back to Review
+                    ← Back to Review
                   </button>
                 </div>
               )}
