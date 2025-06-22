@@ -4,6 +4,7 @@ import ca.kailo.berkeley.api.TrainAPI
 import ca.kailo.berkeley.model.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.io.File
 import java.nio.file.Paths
 import org.springframework.core.io.Resource
 import org.springframework.http.ResponseEntity
@@ -74,12 +75,12 @@ class TrainRestController(
         valLoss[deploymentId] = CopyOnWriteArrayList()
 
         val processBuilder = ProcessBuilder(
-            "../model_zoo/venv/bin/python", "-u",
-            "../model_zoo/train.py",
-            "--config", "${type.path}.yaml",
-            "--data_path", zipPath.toString(),
+            "venv/bin/python", "-u",
+            "train.py",
+            "--config", "classification.yaml",//"${type.path}.yaml",
+            "--data_path", "data/datasets/$deploymentId",
             "--deployment_id", deploymentId
-        )
+        ).directory(File("../model_zoo"))
 
         logger.info("Running ${processBuilder.command().joinToString(" ")}")
 

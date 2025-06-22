@@ -1,8 +1,11 @@
 package ca.kailo.berkeley
 
+import ca.kailo.berkeley.TrainRestController.Companion
 import ca.kailo.berkeley.api.InferenceAPI
 import ca.kailo.berkeley.model.InferenceList200ResponseInner
 import ca.kailo.berkeley.model.InferenceStatus200Response
+import java.io.File
+import java.nio.file.Paths
 import org.springframework.core.io.Resource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -11,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 
 @RestController
 class InferenceRestController(
@@ -45,20 +49,40 @@ class InferenceRestController(
     }
 
     override fun inferenceStart(deploymentId: String, body: Any): ResponseEntity<Unit> {
-        val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId).toString()
+        val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId)
         val configPath = deploymentRegistry.get(deploymentId)!!.type.path + ".yaml"
 
+        // --- new: unzip into ../model_zoo/data/datasets/DEPLOYMENT_ID ---
+        val datasetsRoot = Paths.get("..", "model_zoo", "data", "inference_datasets")
+        val targetDir = datasetsRoot.resolve(deploymentId).toFile()
+        if (!targetDir.exists()) {
+            targetDir.parentFile.mkdirs()
+            targetDir.mkdirs()
+        }
+
+        logger.info("Unzipping {} into {}", zipPath, targetDir.absolutePath)
+        val unzipProcess = ProcessBuilder("unzip", "-o", zipPath.toString(), "-d", targetDir.absolutePath)
+            .redirectErrorStream(true)
+            .start()
+        val unzipExit = unzipProcess.waitFor()
+        if (unzipExit != 0) {
+            logger.error("Failed to unzip {} (exit code {})", zipPath, unzipExit)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+        // ---------------------------------------------------------------
+
         val processBuilder = ProcessBuilder(
-            "bash", "-c",
-            "source ../model_zoo/venv/bin/activate && " +
-                    "python3 -u ../model_zoo/train.py " +
-                    "--inference_mode 1 " +
-                    "--config $configPath " +
-                    "--data_path $zipPath " +
-                    "--deployment_id $deploymentId"
-        ).inheritIO()
+            "venv/bin/python", "-u",
+            "train.py",
+            "--inference_mode", "1",
+            "--config", "classification.yaml",//"$configPath.yaml",
+            "--data_path", "data/inference_datasets/$deploymentId",
+            "--deployment_id", deploymentId
+        ).directory(File("../model_zoo"))
 
         logger.info("Running ${processBuilder.command().joinToString(" ")}")
+
+        processBuilder.redirectErrorStream(true)
 
         // submit job asynchronously
         val future: Future<*> = executor.submit {

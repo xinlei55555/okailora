@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import torch
 import argparse
 
@@ -148,7 +150,14 @@ def train(config):
             optimizer.step()
             total_loss += loss.item()
 
-        loss = total_loss / len(train_loader)
+        # avoid log(0) by clamping to epsilon
+        train_loss_value = total_loss / len(train_loader)
+        train_loss_value = max(train_loss_value, np.finfo(float).eps)
+        loss = np.log(train_loss_value)
+
+        val_loss_value = max(float(val_loss), np.finfo(float).eps)
+        val_loss = np.log(val_loss_value)
+
         print(f"[TRAIN] Loss: {loss:.6f}")
 
         print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(loss)+",\"val_loss\":"+str(val_loss)+"}")
