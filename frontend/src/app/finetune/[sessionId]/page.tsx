@@ -122,8 +122,9 @@ interface UploadedFile {
   size: number;
   type: string;
   lastModified: number;
-  status: 'uploading' | 'completed' | 'error';
+  status: 'ready' | 'uploading' | 'completed' | 'error';
   progress: number;
+  file?: File; // Store the actual file object
 }
 
 export default function FinetunePage() {
@@ -165,9 +166,9 @@ export default function FinetunePage() {
     return matchesSearch && matchesTags && matchesLicense;
   });
 
-  // Handle file upload
+  // Handle file upload (just store locally, don't upload to backend yet)
   const handleFileUpload = async (files: FileList) => {
-    Array.from(files).forEach(async (file) => {
+    Array.from(files).forEach((file) => {
       const fileId = Math.random().toString(36).substr(2, 9);
       const uploadedFile: UploadedFile = {
         id: fileId,
@@ -175,33 +176,70 @@ export default function FinetunePage() {
         size: file.size,
         type: file.type,
         lastModified: file.lastModified,
-        status: 'uploading',
-        progress: 0
+        status: 'ready',
+        progress: 0,
+        file: file // Store the actual file object
       };
 
       setUploadedFiles(prev => [...prev, uploadedFile]);
+    });
+  };
+
+  // Upload files to backend when transitioning to parameters step
+  const uploadFilesToBackend = async () => {
+    const filesToUpload = uploadedFiles.filter(f => f.status === 'ready');
+    
+    if (filesToUpload.length === 0) return;
+
+    console.log(`Starting upload of ${filesToUpload.length} files to backend...`);
+
+    for (const fileData of filesToUpload) {
+      if (!fileData.file) continue;
+
+      console.log(`Uploading file: ${fileData.name} (${formatFileSize(fileData.size)})`);
+
+      // Update status to uploading
+      setUploadedFiles(prev => 
+        prev.map(f => f.id === fileData.id ? { ...f, status: 'uploading', progress: 0 } : f)
+      );
 
       try {
+        // Simulate progress for better UX
+        const progressInterval = setInterval(() => {
+          setUploadedFiles(prev => 
+            prev.map(f => {
+              if (f.id === fileData.id && f.progress < 90) {
+                return { ...f, progress: f.progress + 10 };
+              }
+              return f;
+            })
+          );
+        }, 100);
+
         // Create a FormData with the file for the API call
         const formData = {
-          file: file
+          file: fileData.file
         };
 
         // Call the actual API
         await TrainService.trainUploadData(sessionId, formData);
 
-        // Update status to completed on success
+        // Clear progress interval and update status to completed
+        clearInterval(progressInterval);
+        console.log(`✅ Successfully uploaded: ${fileData.name}`);
         setUploadedFiles(prev => 
-          prev.map(f => f.id === fileId ? { ...f, status: 'completed', progress: 100 } : f)
+          prev.map(f => f.id === fileData.id ? { ...f, status: 'completed', progress: 100 } : f)
         );
       } catch (error) {
-        console.error('Upload failed:', error);
+        console.error(`❌ Upload failed for ${fileData.name}:`, error);
         // Update status to error on failure
         setUploadedFiles(prev => 
-          prev.map(f => f.id === fileId ? { ...f, status: 'error', progress: 0 } : f)
+          prev.map(f => f.id === fileData.id ? { ...f, status: 'error', progress: 0 } : f)
         );
       }
-    });
+    }
+    
+    console.log('🎉 All file uploads completed!');
   };
 
   // Drag and drop handlers
@@ -276,9 +314,14 @@ export default function FinetunePage() {
             >
               ← Back to Model Selection
             </button>
-            {uploadedFiles.some(f => f.status === 'completed') && (
+            {uploadedFiles.some(f => f.status === 'ready' || f.status === 'completed') && (
               <button
-                onClick={() => setCurrentStep(3)}
+                onClick={async () => {
+                  if (uploadedFiles.some(f => f.status === 'ready')) {
+                    await uploadFilesToBackend();
+                  }
+                  setCurrentStep(3);
+                }}
                 className={`${baseButtonClass} ${primaryButtonClass}`}
               >
                 Configure Parameters →
@@ -717,7 +760,7 @@ export default function FinetunePage() {
                     <div>
                       <div className="font-medium">{file.name}</div>
                       <div className="text-sm text-gray-400">
-                        {formatFileSize(file.size)} • {file.status}
+                        {formatFileSize(file.size)} • {file.status === 'ready' ? 'ready to upload' : file.status}
                       </div>
                     </div>
                   </div>
@@ -742,6 +785,21 @@ export default function FinetunePage() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Data Upload Notice */}
+      {uploadedFiles.some(f => f.status === 'ready') && (
+        <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <div className="text-blue-400 text-xl">ℹ️</div>
+            <div>
+              <h4 className="font-semibold text-blue-300 mb-1">Files Ready for Upload</h4>
+              <p className="text-sm text-blue-200">
+                Your files are staged and ready. They will be uploaded to the server when you proceed to configure parameters.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -930,7 +988,7 @@ export default function FinetunePage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Files:</span>
-                <span>{uploadedFiles.filter(f => f.status === 'completed').length} uploaded</span>
+                <span>{uploadedFiles.filter(f => f.status === 'ready' || f.status === 'completed').length} uploaded</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Learning Rate:</span>
@@ -972,7 +1030,7 @@ export default function FinetunePage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Training Files:</span>
-                <span>{uploadedFiles.filter(f => f.status === 'completed').length} files</span>
+                <span>{uploadedFiles.filter(f => f.status === 'ready' || f.status === 'completed').length} files</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Data Size:</span>
@@ -1027,7 +1085,7 @@ export default function FinetunePage() {
       <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
         <h3 className="text-lg font-semibold mb-4">Training Data Files</h3>
         <div className="space-y-2">
-          {uploadedFiles.filter(f => f.status === 'completed').map((file) => (
+          {uploadedFiles.filter(f => f.status === 'ready' || f.status === 'completed').map((file) => (
             <div key={file.id} className="flex items-center justify-between py-2 px-3 bg-gray-700/30 rounded">
               <div className="flex items-center space-x-3">
                 <span className="text-lg">📄</span>
