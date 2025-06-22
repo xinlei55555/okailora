@@ -83,20 +83,20 @@ export default function MetricChart({ datasets, title }: MetricChartProps) {
           {datasets.map(ds => ds.data.length > 1 && (
             <g key={ds.label}>
               <defs>
-                <linearGradient id={`gradient-${ds.label}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: ds.color, stopOpacity: 0.3 }} />
-                  <stop offset="100%" style={{ stopColor: ds.color, stopOpacity: 0.05 }} />
+                <linearGradient id={`gradient-${ds.label.replace(/\s+/g, '-')}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style={{ stopColor: ds.color, stopOpacity: 0.4 }} />
+                  <stop offset="100%" style={{ stopColor: ds.color, stopOpacity: 0.1 }} />
                 </linearGradient>
               </defs>
               
               {/* Area fill */}
               <path
-                d={`M ${ds.data.map((point, index) => {
+                d={`M 0,300 L ${ds.data.map((point, index) => {
                   const x = (index / (ds.data.length - 1)) * 500;
                   const y = 300 - ((point.value - minValue) / range) * 300;
                   return `${x},${y}`;
-                }).join(' L ')} L 500,300 L 0,300 Z`}
-                fill={`url(#gradient-${ds.label})`}
+                }).join(' L ')} L 500,300 Z`}
+                fill={`url(#gradient-${ds.label.replace(/\s+/g, '-')})`}
               />
               
               {/* Main line */}
