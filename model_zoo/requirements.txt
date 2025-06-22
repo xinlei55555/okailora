@@ -4,6 +4,7 @@ loralib #==0.1.2
 matplotlib #==3.9.2
 numpy #==2.1.1
 pandas #==2.2.2
+peft
 Pillow #==10.4.0
 pyarrow #==17.0.0
 PyYAML #==6.0.2

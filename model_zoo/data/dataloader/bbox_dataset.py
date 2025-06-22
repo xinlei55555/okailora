@@ -5,7 +5,7 @@ import os
 
 from data.dataloader import BaseDataset
 
-class DetectionDataset(BaseDataset):
+class BboxDataset(BaseDataset):
     def __init__(self, root_dir, bbox_json_path, transform=None):
         super().__init__(root_dir, transform)
         with open(bbox_json_path, 'r') as f:
