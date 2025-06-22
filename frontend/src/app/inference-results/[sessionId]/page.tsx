@@ -13,18 +13,34 @@ interface BackendResult {
 export default function InferenceResultsPage() {
   const params = useParams();
   const router = useRouter();
-  const deploymentId = params.sessionId as string; // Using sessionId param but it's actually the deployment ID
+  const sessionId = params.sessionId as string; // This is the workflow session ID from the URL
+  
+  // Get the actual deployment ID from sessionStorage where it was stored by the inference page
+  // This fixes the issue where sessionId was incorrectly being used as deploymentId
+  const [deploymentId, setDeploymentId] = useState<string | null>(null);
   const [results, setResults] = useState<BackendResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'gallery' | 'analytics' | 'export'>('gallery');
 
   useEffect(() => {
-    console.log(`[InferenceResults] Starting to fetch results for deployment: ${deploymentId}`);
+    // Retrieve deployment ID from sessionStorage
+    const storedDeploymentId = sessionStorage.getItem(`inference_deployment_${sessionId}`);
+    
+    if (!storedDeploymentId) {
+      console.error('[InferenceResults] No deployment ID found for session:', sessionId);
+      setError('No deployment ID found. Please start inference again.');
+      setLoading(false);
+      return;
+    }
+    
+    setDeploymentId(storedDeploymentId);
+    
+    console.log(`[InferenceResults] Starting to fetch results for deployment: ${storedDeploymentId}`);
     setLoading(true);
     setError(null);
     
-    InferenceService.inferenceStatus(deploymentId)
+    InferenceService.inferenceStatus(storedDeploymentId)
       .then((res) => {
         console.log('[InferenceResults] Raw API response:', res);
         console.log('[InferenceResults] Response type:', typeof res);
@@ -69,7 +85,7 @@ export default function InferenceResultsPage() {
         setError('Failed to fetch results.');
         setLoading(false);
       });
-  }, [deploymentId]);
+  }, [sessionId]); // Changed from deploymentId to sessionId
 
   // Gallery Tab: Scrollable grid of image results
   const renderGalleryTab = () => (

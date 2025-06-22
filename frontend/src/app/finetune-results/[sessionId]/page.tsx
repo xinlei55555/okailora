@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useChatContext } from '@/components/ChatWidget';
+import { TrainService, Deployment } from '@/api';
+import { handleInferenceClick } from '@/utils/navigation';
 
 interface ModelMetrics {
   finalAccuracy: number;
@@ -52,6 +54,21 @@ export default function FinetuneResultsPage() {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'evaluation' | 'model' | 'deployment'>('overview');
   const [deploymentStatus, setDeploymentStatus] = useState<'none' | 'deploying' | 'deployed' | 'failed'>('none');
   const [modelDownloaded, setModelDownloaded] = useState(false);
+  
+  // Modal states
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+  // Publish model form state
+  const [publishForm, setPublishForm] = useState({
+    name: '',
+    description: '',
+    type: Deployment.type.CLASSIFICATION,
+    license: 'MIT'
+  });
+  const [publishLoading, setPublishLoading] = useState(false);
 
   const formatNumber = (num: number, decimals: number = 2) => {
     return num.toFixed(decimals);
@@ -78,6 +95,60 @@ export default function FinetuneResultsPage() {
     setTimeout(() => {
       setModelDownloaded(false);
     }, 2000);
+  };
+
+  const handleShareLink = () => {
+    setShowShareModal(true);
+  };
+
+  const handlePublishModel = () => {
+    setShowPublishModal(true);
+  };
+
+  const handleRunInference = async () => {
+    await handleInferenceClick(router);
+  };
+
+  const handleExportWeights = () => {
+    setShowExportModal(true);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setNotification({type: 'success', message: 'Copied to clipboard!'});
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handlePublishSubmit = async () => {
+    setPublishLoading(true);
+    try {
+      const deploymentData = {
+        name: publishForm.name,
+        deployment_id: sessionId,
+        type: publishForm.type,
+        description: publishForm.description,
+        license: publishForm.license
+      };
+      
+      await TrainService.trainElaborate(sessionId, deploymentData);
+      
+      setShowPublishModal(false);
+      setPublishForm({
+        name: '',
+        description: '',
+        type: Deployment.type.CLASSIFICATION,
+        license: 'MIT'
+      });
+      
+      setNotification({type: 'success', message: 'Model published successfully!'});
+      setTimeout(() => setNotification(null), 5000);
+    } catch (error) {
+      console.error('Failed to publish model:', error);
+      setNotification({type: 'error', message: 'Failed to publish model. Please try again.'});
+      setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setPublishLoading(false);
+    }
   };
 
   const renderOverviewTab = () => (
@@ -175,31 +246,76 @@ export default function FinetuneResultsPage() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button
-          onClick={handleDeploy}
-          disabled={deploymentStatus === 'deploying'}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 text-white p-4 rounded-lg transition-all font-semibold"
-        >
-          {deploymentStatus === 'deploying' ? '🚀 Deploying...' : 
-           deploymentStatus === 'deployed' ? '✅ Deployed' : '🚀 Deploy Model'}
-        </button>
-        
-        <button
-          onClick={handleDownload}
-          disabled={modelDownloaded}
-          className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white p-4 rounded-lg transition-colors font-semibold"
-        >
-          {modelDownloaded ? '⬇️ Downloading...' : '💾 Download Model'}
-        </button>
-        
-        <button
-          onClick={() => openChatWithMessage("My model training is complete! Can you help me understand the results and suggest next steps for deployment and optimization?")}
-          className="bg-green-700 hover:bg-green-600 text-white p-4 rounded-lg transition-colors font-semibold"
-        >
-          💬 Get AI Analysis
-        </button>
+      {/* Primary Actions */}
+      <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-lg p-6 border border-gray-600">
+        <h3 className="text-lg font-semibold mb-4 text-center">What would you like to do next?</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <button
+            onClick={handleShareLink}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-4 rounded-lg transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <div className="text-2xl mb-2">🔗</div>
+            <div>Share Link</div>
+            <div className="text-xs opacity-80 mt-1">Copy or share results</div>
+          </button>
+          
+          <button
+            onClick={handlePublishModel}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white p-4 rounded-lg transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <div className="text-2xl mb-2">📦</div>
+            <div>Publish Model</div>
+            <div className="text-xs opacity-80 mt-1">Make publicly available</div>
+          </button>
+          
+          <button
+            onClick={handleRunInference}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-lg transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <div className="text-2xl mb-2">🔮</div>
+            <div>Run Inference</div>
+            <div className="text-xs opacity-80 mt-1">Test your model</div>
+          </button>
+          
+          <button
+            onClick={handleExportWeights}
+            className="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white p-4 rounded-lg transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <div className="text-2xl mb-2">💾</div>
+            <div>Export LoRA</div>
+            <div className="text-xs opacity-80 mt-1">Download weights</div>
+          </button>
+        </div>
+      </div>
+
+      {/* Additional Actions */}
+      <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
+        <h4 className="text-sm font-medium text-gray-400 mb-3">Additional Options</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <button
+            onClick={handleDeploy}
+            disabled={deploymentStatus === 'deploying'}
+            className="bg-blue-600/20 hover:bg-blue-600/30 disabled:opacity-50 text-blue-300 border border-blue-600/30 p-3 rounded-lg transition-all text-sm font-medium"
+          >
+            {deploymentStatus === 'deploying' ? '🚀 Deploying...' : 
+             deploymentStatus === 'deployed' ? '✅ Deployed' : '🚀 Deploy to Cloud'}
+          </button>
+          
+          <button
+            onClick={handleDownload}
+            disabled={modelDownloaded}
+            className="bg-gray-600/20 hover:bg-gray-600/30 disabled:opacity-50 text-gray-300 border border-gray-600/30 p-3 rounded-lg transition-all text-sm font-medium"
+          >
+            {modelDownloaded ? '⬇️ Downloading...' : '💾 Download Full Model'}
+          </button>
+          
+          <button
+            onClick={() => openChatWithMessage("My model training is complete! Can you help me understand the results and suggest next steps for deployment and optimization?")}
+            className="bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-600/30 p-3 rounded-lg transition-all text-sm font-medium"
+          >
+            💬 Get AI Analysis
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -601,6 +717,217 @@ export default function FinetuneResultsPage() {
           </div>
         </main>
       </div>
+
+      {/* Notification Toast */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all ${
+          notification.type === 'success' 
+            ? 'bg-green-600 text-white' 
+            : 'bg-red-600 text-white'
+        }`}>
+          <div className="flex items-center space-x-2">
+            <span>{notification.type === 'success' ? '✅' : '❌'}</span>
+            <span>{notification.message}</span>
+            <button 
+              onClick={() => setNotification(null)}
+              className="ml-2 text-white/80 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Share Link Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Share Model Results</h3>
+              <button 
+                onClick={() => setShowShareModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Share URL
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={`${window.location.origin}/finetune-results/${sessionId}`}
+                    readOnly
+                    className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(`${window.location.origin}/finetune-results/${sessionId}`)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    copyToClipboard(`${window.location.origin}/finetune-results/${sessionId}`);
+                    setShowShareModal(false);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+                >
+                  📋 Copy Link
+                </button>
+                <button
+                  onClick={() => {
+                    const text = `Check out my fine-tuned model results: ${window.location.origin}/finetune-results/${sessionId}`;
+                    if (navigator.share) {
+                      navigator.share({ title: 'Model Training Results', text, url: `${window.location.origin}/finetune-results/${sessionId}` });
+                    } else {
+                      copyToClipboard(text);
+                    }
+                    setShowShareModal(false);
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg"
+                >
+                  📤 Share
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Publish Model Modal */}
+      {showPublishModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Publish Model</h3>
+              <button 
+                onClick={() => setShowPublishModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Model Name *
+                </label>
+                <input
+                  type="text"
+                  value={publishForm.name}
+                  onChange={(e) => setPublishForm({...publishForm, name: e.target.value})}
+                  placeholder="Enter model name"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={publishForm.description}
+                  onChange={(e) => setPublishForm({...publishForm, description: e.target.value})}
+                  placeholder="Describe your model"
+                  rows={3}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Model Type *
+                </label>
+                <select
+                  value={publishForm.type}
+                  onChange={(e) => setPublishForm({...publishForm, type: e.target.value as Deployment.type})}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2"
+                >
+                  <option value={Deployment.type.CLASSIFICATION}>Classification</option>
+                  <option value={Deployment.type.SEGMENTATION}>Segmentation</option>
+                  <option value={Deployment.type.GENERATION}>Generation</option>
+                  <option value={Deployment.type.BBOX}>Bounding Box</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  License
+                </label>
+                <select
+                  value={publishForm.license}
+                  onChange={(e) => setPublishForm({...publishForm, license: e.target.value})}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2"
+                >
+                  <option value="MIT">MIT</option>
+                  <option value="Apache-2.0">Apache 2.0</option>
+                  <option value="GPL-3.0">GPL 3.0</option>
+                  <option value="BSD-3-Clause">BSD 3-Clause</option>
+                  <option value="Custom">Custom</option>
+                </select>
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => setShowPublishModal(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePublishSubmit}
+                  disabled={publishLoading || !publishForm.name}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-2 rounded-lg"
+                >
+                  {publishLoading ? 'Publishing...' : 'Publish Model'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export LoRA Weights Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Export LoRA Weights</h3>
+              <button 
+                onClick={() => setShowExportModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">🚧</div>
+              <h4 className="text-lg font-semibold mb-2">Feature Coming Soon</h4>
+              <p className="text-gray-400 mb-6">
+                LoRA weight export functionality is currently under development. 
+                You'll be able to download optimized LoRA weights for edge deployment soon.
+              </p>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
