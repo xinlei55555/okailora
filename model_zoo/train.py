@@ -244,6 +244,10 @@ def inference(config):
                         text_output = output
                         break
                 print(f"[INFO] Textual model class: {text_output}")
+
+                base = os.path.basename(model_paths[0])
+                print("pipe:{\"image\":\"" + base + "\",\"classification\":\"" + text_output + "\"}")
+
             print(f"[INFO] Inference {i+1}/{len(inference_loader)}: {model_paths[0]}")
             print(f"[INFO] Model output: {outputs}")
 

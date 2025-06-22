@@ -237,7 +237,14 @@ paths:
                 properties:
                   finished:
                     type: boolean
-                required: [finished]
+                  result:
+                    type: array
+                    items:
+                      properties:
+                        image:
+                          type: string
+                        classification:
+                          type: string
 
   /inference/weights:
     get:

@@ -1,10 +1,11 @@
 package ca.kailo.berkeley
 
-import ca.kailo.berkeley.TrainRestController.Companion
-import ca.kailo.berkeley.TrainRestController.LogSchema
+
 import ca.kailo.berkeley.api.InferenceAPI
 import ca.kailo.berkeley.model.Deployment
 import ca.kailo.berkeley.model.InferenceStatus200Response
+import ca.kailo.berkeley.model.InferenceStatus200ResponseResultInner
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 import java.nio.file.Paths
 import java.util.Locale
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import org.slf4j.LoggerFactory
@@ -21,7 +23,8 @@ import org.springframework.http.HttpStatus
 @RestController
 class InferenceRestController(
     private val storage: Storage,
-    private val deploymentRegistry: DeploymentRegistry
+    private val deploymentRegistry: DeploymentRegistry,
+    private val objectMapper: ObjectMapper
 ) : InferenceAPI {
 
     companion object {
@@ -33,6 +36,8 @@ class InferenceRestController(
 
     // map of deploymentId -> Future representing the running job
     private val inferenceJobs = ConcurrentHashMap<String, Future<*>>()
+
+    private val classifications = ConcurrentHashMap<String, MutableList<LogSchema>>()
 
     override fun inferenceList(): ResponseEntity<List<Deployment>> {
         return ResponseEntity.ok(deploymentRegistry.getAll().toList())
@@ -79,6 +84,8 @@ class InferenceRestController(
 
         processBuilder.redirectErrorStream(true)
 
+        classifications[deploymentId] = CopyOnWriteArrayList()
+
         // submit job asynchronously
         val future: Future<*> = executor.submit {
             try {
@@ -89,6 +96,12 @@ class InferenceRestController(
                     logger.info(">> started reading inference output")
                     while (reader.readLine().also { line = it } != null) {
                         logger.info(">> got line: {}", line)
+                        if (line!!.startsWith("pipe:")) {
+                            val json  = line!!.removePrefix("pipe:")
+                            val entry = objectMapper.readValue(json, LogSchema::class.java)
+                            classifications[deploymentId]!!.add(entry)
+                            logger.info("LOGGING POINT: {}", entry)
+                        }
                     }
                 }
 
@@ -114,6 +127,14 @@ class InferenceRestController(
     override fun inferenceStatus(deploymentId: String): ResponseEntity<InferenceStatus200Response> {
         val future = inferenceJobs[deploymentId]
         val finished = future?.isDone ?: false
-        return ResponseEntity.ok(InferenceStatus200Response(finished))
+        val data = classifications[deploymentId].orEmpty()
+        val inner = mutableListOf<InferenceStatus200ResponseResultInner>()
+        data.forEach {
+            inner.add(InferenceStatus200ResponseResultInner(it.image, it.classification))
+        }
+        return ResponseEntity.ok(InferenceStatus200Response(finished, inner))
     }
+
+    data class LogSchema(val image: String, val classification: String)
+
 }
