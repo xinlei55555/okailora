@@ -111,8 +111,16 @@ def train(config):
     checkpoint_path = os.path.join(checkpoint_dir, 'best_model.pth.tr')
 
     best_val_loss = float('inf')
+
     for epoch in range(config.START_EPOCH, config.EPOCH_NUMBER):
         print(f"[INFO] Epoch {epoch}")
+         #Accuracy metrics initialize metric
+        if config.MODEL_NAME == 'classification':
+            train_correct = 0
+            train_total = 0
+            val_correct = 0
+            val_total = 0
+
         model.eval()
         optimizer.eval()
         with torch.no_grad():
@@ -127,11 +135,20 @@ def train(config):
 
             val_loss /= len(val_loader)
             print(f"[VAL] Loss: {val_loss:.6f}")
+            
+            if config.MODEL_NAME == 'classification':
+                # val accuracy:
+                _, predicted = torch.max(outputs, 1)
+                val_correct += (predicted == targets).sum().item()
+                val_total += targets.size(0)
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             save_checkpoint(model, checkpoint_path, num_classes, class_to_idx)
             print(f"[INFO] Checkpoint saved: {checkpoint_path}")
+        
+        val_loss_value = max(float(val_loss), np.finfo(float).eps)
+        val_loss = np.log(val_loss_value)
 
         model.train()
         optimizer.train()
@@ -150,17 +167,33 @@ def train(config):
             optimizer.step()
             total_loss += loss.item()
 
+            if config.MODEL_NAME == 'classification':
+                # Inside training loop, after loss computation
+                _, predicted = torch.max(outputs, 1)
+                train_correct += (predicted == targets).sum().item()
+                train_total += targets.size(0)
+    
         # avoid log(0) by clamping to epsilon
         train_loss_value = total_loss / len(train_loader)
         train_loss_value = max(train_loss_value, np.finfo(float).eps)
         loss = np.log(train_loss_value)
 
-        val_loss_value = max(float(val_loss), np.finfo(float).eps)
-        val_loss = np.log(val_loss_value)
-
+        loss = total_loss / len(train_loader)
         print(f"[TRAIN] Loss: {loss:.6f}")
 
         print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(loss)+",\"val_loss\":"+str(val_loss)+"}")
+
+        if config.MODEL_NAME == 'classification':
+            train_accuracy = train_correct / train_total
+            print(f"[TRAIN] Accuracy: {train_accuracy:.4f}")
+
+            val_accuracy = val_correct / val_total
+            print(f"[VAL] Accuracy: {val_accuracy:.4f}")
+            
+            # overwrite the pipe with accuracies
+            print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(loss)+",\"val_loss\":"+str(val_loss)+
+                ",\"train_acc\":"+str(train_accuracy)+",\"val_acc\":"+str(val_accuracy)+"}")
+
 
 def inference(config):
     print('Running inference...')
