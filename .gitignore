@@ -1,3 +1,4 @@
 datasets/
 *.log
 *.tr
+__pycache__/
