@@ -1,6 +1,5 @@
 package ca.kailo.berkeley
 
-
 import ca.kailo.berkeley.api.InferenceAPI
 import ca.kailo.berkeley.model.Deployment
 import ca.kailo.berkeley.model.InferenceStatus200Response
@@ -12,11 +11,8 @@ import java.util.Locale
 import org.springframework.core.io.Resource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
-
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 
@@ -31,12 +27,7 @@ class InferenceRestController(
         private val logger = LoggerFactory.getLogger(InferenceRestController::class.java)
     }
 
-    // thread‐pool for running inference jobs
-    private val executor = Executors.newCachedThreadPool()
-
-    // map of deploymentId -> Future representing the running job
-    private val inferenceJobs = ConcurrentHashMap<String, Future<*>>()
-
+    // map of deploymentId -> collected inference results
     private val classifications = ConcurrentHashMap<String, MutableList<LogSchema>>()
 
     override fun inferenceList(): ResponseEntity<List<Deployment>> {
@@ -50,9 +41,10 @@ class InferenceRestController(
 
     override fun inferenceStart(deploymentId: String): ResponseEntity<Unit> {
         val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId)
-        val configPath = deploymentRegistry.get(deploymentId)!!.type!!.value.lowercase(Locale.getDefault()) + ".yaml"
+        val configFile = deploymentRegistry.get(deploymentId)!!
+        val configName = configFile.type!!.value.lowercase(Locale.getDefault()) + ".yaml"
 
-        // --- new: unzip into ../model_zoo/data/datasets/DEPLOYMENT_ID ---
+        // unzip into ../model_zoo/data/inference_datasets/DEPLOYMENT_ID
         val datasetsRoot = Paths.get("..", "model_zoo", "data", "inference_datasets")
         val targetDir = datasetsRoot.resolve(deploymentId).toFile()
         if (!targetDir.exists()) {
@@ -61,62 +53,54 @@ class InferenceRestController(
         }
 
         logger.info("Unzipping {} into {}", zipPath, targetDir.absolutePath)
-        val unzipProcess = ProcessBuilder("unzip", "-o", zipPath.toString(), "-d", targetDir.absolutePath)
+        val unzipExit = ProcessBuilder("unzip", "-o", zipPath.toString(), "-d", targetDir.absolutePath)
             .redirectErrorStream(true)
             .start()
-        val unzipExit = unzipProcess.waitFor()
+            .waitFor()
         if (unzipExit != 0) {
             logger.error("Failed to unzip {} (exit code {})", zipPath, unzipExit)
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
-        // ---------------------------------------------------------------
 
+        // prepare synchronous process
         val processBuilder = ProcessBuilder(
             "venv/bin/python", "-u",
             "train.py",
             "--inference_mode", "1",
-            "--config", "classification.yaml",//"$configPath.yaml",
+            "--config", configName,
             "--data_path", "data/inference_datasets/$deploymentId",
             "--deployment_id", deploymentId
         ).directory(File("../model_zoo"))
 
-        logger.info("Running ${processBuilder.command().joinToString(" ")}")
+        logger.info("Running synchronous inference: ${processBuilder.command().joinToString(" ")}")
 
-        processBuilder.redirectErrorStream(true)
-
+        // initialize results list
         classifications[deploymentId] = CopyOnWriteArrayList()
 
-        // submit job asynchronously
-        val future: Future<*> = executor.submit {
-            try {
-                val process = processBuilder.start()
-
-                process.inputStream.bufferedReader().use { reader ->
-                    var line: String?
-                    logger.info(">> started reading inference output")
-                    while (reader.readLine().also { line = it } != null) {
-                        logger.info(">> got line: {}", line)
-                        if (line!!.startsWith("pipe:")) {
-                            val json  = line!!.removePrefix("pipe:")
-                            val entry = objectMapper.readValue(json, LogSchema::class.java)
-                            classifications[deploymentId]!!.add(entry)
-                            logger.info("LOGGING POINT: {}", entry)
-                        }
+        try {
+            val process = processBuilder.start()
+            process.inputStream.bufferedReader().use { reader ->
+                var line: String?
+                while (reader.readLine().also { line = it } != null) {
+                    logger.info(">> got line: {}", line)
+                    if (line!!.startsWith("pipe:")) {
+                        val json = line!!.removePrefix("pipe:")
+                        val entry = objectMapper.readValue(json, LogSchema::class.java)
+                        classifications[deploymentId]!!.add(entry)
+                        logger.info("LOGGING POINT: {}", entry)
                     }
                 }
-
-                val exitCode = process.waitFor()
-                if (exitCode != 0) {
-                    logger.error("Training for {} failed with exit code {}", deploymentId, exitCode)
-                }
-                logger.info("Finished!")
-            } catch (e: Exception) {
-                logger.error("Error in training thread for {}", deploymentId, e)
             }
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                logger.error("Inference for {} failed with exit code {}", deploymentId, exitCode)
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+            }
+        } catch (e: Exception) {
+            logger.error("Error during synchronous inference for {}", deploymentId, e)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
-        inferenceJobs[deploymentId] = future
 
-        // return immediately
         return ResponseEntity.ok().build()
     }
 
@@ -125,16 +109,14 @@ class InferenceRestController(
     }
 
     override fun inferenceStatus(deploymentId: String): ResponseEntity<InferenceStatus200Response> {
-        val future = inferenceJobs[deploymentId]
-        val finished = future?.isDone ?: false
+        // Since inferenceStart now blocks, the job is always finished
+        val finished = true
         val data = classifications[deploymentId].orEmpty()
-        val inner = mutableListOf<InferenceStatus200ResponseResultInner>()
-        data.forEach {
-            inner.add(InferenceStatus200ResponseResultInner(it.image, it.classification, it.base64))
+        val results = data.map {
+            InferenceStatus200ResponseResultInner(it.image, it.classification, it.base64)
         }
-        return ResponseEntity.ok(InferenceStatus200Response(finished, inner))
+        return ResponseEntity.ok(InferenceStatus200Response(finished, results))
     }
 
     data class LogSchema(val image: String, val classification: String, val base64: String)
-
 }

@@ -26,11 +26,10 @@ class Storage {
     }
 
     /**
-     * Saves the provided resource as a ZIP file under the deployment ID.
+     * Saves the provided resource as a ZIP file under the deployment ID, overwriting any existing file.
      */
     fun saveData(type: StorageType, deploymentId: String, resource: Resource): Path {
         val targetPath = getDataPath(type, deploymentId)
-        Files.createFile(targetPath)
         resource.inputStream.use { input ->
             Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
         }
