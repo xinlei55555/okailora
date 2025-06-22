@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useChatContext } from '@/components/ChatWidget';
+import { TrainService } from '@/api';
 
 interface MetricPoint {
   epoch: number;
@@ -35,17 +36,16 @@ export default function FinetuneLoopPage() {
     currentEpoch: 1,
     totalEpochs: 3,
     currentStep: 0,
-    totalSteps: 120, // Reduced from 1200 for faster completion
+    totalSteps: 120, // Assuming total steps, adjust if available from backend
     startTime: Date.now(),
     elapsedTime: 0,
-    estimatedTimeRemaining: process.env.NODE_ENV === 'development' ? 1000 : 10000,
+    estimatedTimeRemaining: 0,
     learningRate: 0.00001
   });
 
   // Metrics data
-  const [accuracyData, setAccuracyData] = useState<MetricPoint[]>([]);
-  const [lossData, setLossData] = useState<MetricPoint[]>([]);
-  const [selectedMetricView, setSelectedMetricView] = useState<'both' | 'accuracy' | 'loss'>('both');
+  const [trainLossData, setTrainLossData] = useState<MetricPoint[]>([]);
+  const [valLossData, setValLossData] = useState<MetricPoint[]>([]);
   const [viewMode, setViewMode] = useState<'realtime' | 'epoch' | 'step'>('realtime');
   const [autoScroll, setAutoScroll] = useState(true);
 
@@ -57,71 +57,56 @@ export default function FinetuneLoopPage() {
   // Training completed state
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Simulate real-time data updates
+  // Fetch real-time data from the backend
   useEffect(() => {
-    if (!trainingStatus.isRunning) return;
+    if (!sessionId || !trainingStatus.isRunning) return;
 
-    // Determine update interval based on environment and desired completion time
-    const isDev = process.env.NODE_ENV === 'development';
-    const totalTrainingTime = isDev ? 1000 : 10000; // 1 second in dev, 10 seconds in prod
-    const updateInterval = totalTrainingTime / trainingStatus.totalSteps; // Distribute updates evenly
-    
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const currentStep = trainingStatus.currentStep + 1;
-      const currentEpoch = Math.floor(currentStep / (trainingStatus.totalSteps / trainingStatus.totalEpochs)) + 1;
-      
-      // Simulate realistic accuracy and loss curves
-      const progress = currentStep / trainingStatus.totalSteps;
-      const epochProgress = (currentStep % (trainingStatus.totalSteps / trainingStatus.totalEpochs)) / (trainingStatus.totalSteps / trainingStatus.totalEpochs);
-      
-      // Accuracy typically increases with some noise
-      const baseAccuracy = 0.65 + (progress * 0.25) + (Math.random() - 0.5) * 0.02;
-      const accuracyPoint: MetricPoint = {
-        epoch: currentEpoch,
-        step: currentStep,
-        value: Math.max(0, Math.min(1, baseAccuracy)),
-        timestamp: now
-      };
+    const intervalId = setInterval(async () => {
+      try {
+        const status = await TrainService.trainStatus(sessionId);
 
-      // Loss typically decreases with some noise
-      const baseLoss = 2.5 - (progress * 1.8) + (Math.random() - 0.5) * 0.1;
-      const lossPoint: MetricPoint = {
-        epoch: currentEpoch,
-        step: currentStep,
-        value: Math.max(0.1, baseLoss),
-        timestamp: now
-      };
+        const trainLoss = status.train_loss || [];
+        const valLoss = status.val_loss || [];
 
-      setAccuracyData(prev => [...prev.slice(-200), accuracyPoint]);
-      setLossData(prev => [...prev.slice(-200), lossPoint]);
+        setTrainLossData(trainLoss.map((value, index) => ({
+            step: index + 1, value, epoch: 0, timestamp: Date.now()
+        })));
+        setValLossData(valLoss.map((value, index) => ({
+            step: index + 1, value, epoch: 0, timestamp: Date.now()
+        })));
 
-      // Add log messages occasionally (every 10% of progress)
-      const logFrequency = Math.max(1, Math.floor(trainingStatus.totalSteps / 10));
-      if (currentStep % logFrequency === 0) {
-        setLogMessages(prev => [...prev.slice(-100), 
-          `Step ${currentStep}: accuracy=${accuracyPoint.value.toFixed(4)}, loss=${lossPoint.value.toFixed(4)}`
-        ]);
-      }
+        const currentStep = trainLoss.length;
+        const elapsedTime = Date.now() - trainingStatus.startTime;
+        let estimatedTimeRemaining = 0;
 
-      setTrainingStatus(prev => ({
-        ...prev,
-        currentStep,
-        currentEpoch,
-        elapsedTime: now - prev.startTime,
-        estimatedTimeRemaining: Math.max(0, totalTrainingTime - (now - prev.startTime))
-      }));
+        if (currentStep > 0 && trainingStatus.totalSteps > 0) {
+            const totalTimeEstimate = (elapsedTime / currentStep) * trainingStatus.totalSteps;
+            estimatedTimeRemaining = Math.max(0, totalTimeEstimate - elapsedTime);
+        }
 
-      // Check if training is complete
-      if (currentStep >= trainingStatus.totalSteps) {
+        setTrainingStatus(prev => ({
+            ...prev,
+            currentStep: currentStep,
+            currentEpoch: prev.totalSteps > 0 && prev.totalEpochs > 0 ? Math.min(prev.totalEpochs, Math.floor(currentStep / (prev.totalSteps / prev.totalEpochs)) + 1) : 1,
+            elapsedTime: elapsedTime,
+            estimatedTimeRemaining: estimatedTimeRemaining
+        }));
+
+        if (status.finished) {
+          setTrainingStatus(prev => ({ ...prev, isRunning: false, estimatedTimeRemaining: 0 }));
+          setIsCompleted(true);
+          setLogMessages(prev => [...prev, "Training completed successfully! 🎉"]);
+          clearInterval(intervalId);
+        }
+      } catch (error) {
+        console.error("Failed to fetch training status:", error);
         setTrainingStatus(prev => ({ ...prev, isRunning: false }));
-        setIsCompleted(true);
-        setLogMessages(prev => [...prev, "Training completed successfully! 🎉"]);
+        clearInterval(intervalId);
       }
-    }, updateInterval);
+    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [trainingStatus.isRunning, trainingStatus.currentStep, trainingStatus.totalSteps, trainingStatus.startTime]);
+    return () => clearInterval(intervalId);
+  }, [sessionId, trainingStatus.isRunning, trainingStatus.startTime, trainingStatus.totalSteps, trainingStatus.totalEpochs]);
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -145,25 +130,35 @@ export default function FinetuneLoopPage() {
     return (trainingStatus.currentStep / trainingStatus.totalSteps) * 100;
   };
 
-  // Chart component (simplified version - in production you'd use a proper charting library)
-  const renderChart = (data: MetricPoint[], color: string, label: string) => {
-    if (data.length === 0) return null;
+  // Chart component for multiple datasets
+  const renderChart = (datasets: { data: MetricPoint[], color: string, label: string }[], title: string) => {
+    const allData = datasets.flatMap(ds => ds.data);
+    if (allData.length === 0) {
+        return (
+            <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 h-full flex items-center justify-center min-h-[24rem]">
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-400">{title}</h3>
+                    <p className="text-sm text-gray-500">Waiting for training data...</p>
+                </div>
+            </div>
+        );
+    }
 
-    const maxValue = Math.max(...data.map(d => d.value));
-    const minValue = Math.min(...data.map(d => d.value));
+    const maxValue = Math.max(...allData.map(d => d.value));
+    const minValue = Math.min(...allData.map(d => d.value));
     const range = maxValue - minValue || 1;
 
     return (
       <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{label}</h3>
+          <h3 className="text-lg font-semibold">{title}</h3>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-400">
-              Latest: {formatNumber(data[data.length - 1]?.value || 0)}
-            </span>
-            <span className="text-sm text-gray-400">
-              Best: {label === 'Accuracy' ? formatNumber(maxValue) : formatNumber(minValue)}
-            </span>
+            {datasets.map(ds => ds.data.length > 0 && (
+              <span key={ds.label} className="text-sm text-gray-400 flex items-center">
+                <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: ds.color }}></span>
+                {ds.label}: {formatNumber(ds.data[ds.data.length - 1]?.value || 0)}
+              </span>
+            ))}
           </div>
         </div>
         
@@ -183,34 +178,20 @@ export default function FinetuneLoopPage() {
               />
             ))}
             
-            {/* Data line */}
-            {data.length > 1 && (
+            {/* Data lines */}
+            {datasets.map(ds => ds.data.length > 1 && (
               <polyline
-                points={data.map((point, index) => {
-                  const x = (index / (data.length - 1)) * 400;
+                key={ds.label}
+                points={ds.data.map((point, index) => {
+                  const x = (index / (ds.data.length - 1)) * 400;
                   const y = 200 - ((point.value - minValue) / range) * 200;
                   return `${x},${y}`;
                 }).join(' ')}
                 fill="none"
-                stroke={color}
+                stroke={ds.color}
                 strokeWidth="2"
               />
-            )}
-            
-            {/* Data points */}
-            {data.slice(-20).map((point, index) => {
-              const x = ((data.length - 20 + index) / (data.length - 1)) * 400;
-              const y = 200 - ((point.value - minValue) / range) * 200;
-              return (
-                <circle
-                  key={`point-${index}`}
-                  cx={x}
-                  cy={y}
-                  r="3"
-                  fill={color}
-                />
-              );
-            })}
+            ))}
           </svg>
           
           {/* Y-axis labels */}
@@ -402,33 +383,6 @@ export default function FinetuneLoopPage() {
                 <div className="flex items-center space-x-4">
                   <div className="flex bg-gray-800 rounded-lg p-1">
                     <button
-                      onClick={() => setSelectedMetricView('both')}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${
-                        selectedMetricView === 'both' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      Both
-                    </button>
-                    <button
-                      onClick={() => setSelectedMetricView('accuracy')}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${
-                        selectedMetricView === 'accuracy' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      Accuracy
-                    </button>
-                    <button
-                      onClick={() => setSelectedMetricView('loss')}
-                      className={`px-3 py-1 rounded text-sm transition-colors ${
-                        selectedMetricView === 'loss' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      Loss
-                    </button>
-                  </div>
-
-                  <div className="flex bg-gray-800 rounded-lg p-1">
-                    <button
                       onClick={() => setViewMode('realtime')}
                       className={`px-3 py-1 rounded text-sm transition-colors ${
                         viewMode === 'realtime' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'
@@ -475,13 +429,21 @@ export default function FinetuneLoopPage() {
               </div>
 
               {/* Charts */}
-              <div className={`grid gap-6 ${selectedMetricView === 'both' ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
-                {(selectedMetricView === 'both' || selectedMetricView === 'accuracy') && 
-                  renderChart(accuracyData, '#10B981', 'Accuracy')
-                }
-                {(selectedMetricView === 'both' || selectedMetricView === 'loss') && 
-                  renderChart(lossData, '#EF4444', 'Loss')
-                }
+              <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+                <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 h-full flex items-center justify-center min-h-[24rem]">
+                    <div className="text-center">
+                        <div className="text-4xl mb-4">📊</div>
+                        <h3 className="text-lg font-semibold text-gray-400">Accuracy Chart</h3>
+                        <p className="text-sm text-gray-500">This chart will be available in a future update.</p>
+                    </div>
+                </div>
+                {renderChart(
+                    [
+                        { data: trainLossData, color: '#3B82F6', label: 'Train Loss' },
+                        { data: valLossData, color: '#EF4444', label: 'Validation Loss' }
+                    ],
+                    'Loss'
+                )}
               </div>
 
               {/* Logs Modal */}
