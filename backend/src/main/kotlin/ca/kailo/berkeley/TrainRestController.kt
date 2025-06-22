@@ -109,6 +109,7 @@ class TrainRestController(
                 if (exitCode != 0) {
                     logger.error("Training for {} failed with exit code {}", deploymentId, exitCode)
                 }
+                logger.info("Finished!")
             } catch (e: Exception) {
                 logger.error("Error in training thread for {}", deploymentId, e)
             }

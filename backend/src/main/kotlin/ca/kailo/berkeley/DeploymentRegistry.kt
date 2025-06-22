@@ -30,8 +30,8 @@ class DeploymentRegistry {
         if (file.exists()) {
             try {
                 val yamlParser = mapper.factory.createParser(file)
-                val loaded = mapper.readValues<List<Deployment>>(yamlParser).readAll().first()
-                loaded.forEach { deployments[it.id] = it }
+                val loaded = mapper.readValues<List<Deployment>>(yamlParser).readAll().firstOrNull()
+                loaded?.forEach { deployments[it.id] = it }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
