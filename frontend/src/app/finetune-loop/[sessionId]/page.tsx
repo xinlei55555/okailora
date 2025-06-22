@@ -46,6 +46,8 @@ export default function FinetuneLoopPage() {
   // Metrics data
   const [trainLossData, setTrainLossData] = useState<MetricPoint[]>([]);
   const [valLossData, setValLossData] = useState<MetricPoint[]>([]);
+  const [trainAccData, setTrainAccData] = useState<MetricPoint[]>([]);
+  const [valAccData, setValAccData] = useState<MetricPoint[]>([]);
   const [viewMode, setViewMode] = useState<'realtime' | 'epoch' | 'step'>('realtime');
   const [autoScroll, setAutoScroll] = useState(true);
 
@@ -67,11 +69,19 @@ export default function FinetuneLoopPage() {
 
         const trainLoss = status.train_loss || [];
         const valLoss = status.val_loss || [];
+        const trainAcc = status.train_acc || [];
+        const valAcc = status.val_acc || [];
 
         setTrainLossData(trainLoss.map((value, index) => ({
             step: index + 1, value, epoch: 0, timestamp: Date.now()
         })));
         setValLossData(valLoss.map((value, index) => ({
+            step: index + 1, value, epoch: 0, timestamp: Date.now()
+        })));
+        setTrainAccData(trainAcc.map((value, index) => ({
+            step: index + 1, value, epoch: 0, timestamp: Date.now()
+        })));
+        setValAccData(valAcc.map((value, index) => ({
             step: index + 1, value, epoch: 0, timestamp: Date.now()
         })));
 
@@ -430,13 +440,13 @@ export default function FinetuneLoopPage() {
 
               {/* Charts */}
               <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
-                <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700 h-full flex items-center justify-center min-h-[24rem]">
-                    <div className="text-center">
-                        <div className="text-4xl mb-4">📊</div>
-                        <h3 className="text-lg font-semibold text-gray-400">Accuracy Chart</h3>
-                        <p className="text-sm text-gray-500">This chart will be available in a future update.</p>
-                    </div>
-                </div>
+                {renderChart(
+                    [
+                        { data: trainAccData, color: '#10B981', label: 'Train Accuracy' },
+                        { data: valAccData, color: '#F59E0B', label: 'Validation Accuracy' }
+                    ],
+                    'Accuracy'
+                )}
                 {renderChart(
                     [
                         { data: trainLossData, color: '#3B82F6', label: 'Train Loss' },
