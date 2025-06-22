@@ -137,6 +137,8 @@ export default function FinetunePage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedLicense, setSelectedLicense] = useState<string>('all');
   const [showTagFilters, setShowTagFilters] = useState(false);
+  const [showLicenseFilters, setShowLicenseFilters] = useState(false);
+  const [showRecommendationsBanner, setShowRecommendationsBanner] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -331,30 +333,40 @@ export default function FinetunePage() {
                     </div>
                   </div>
 
-                  {/* AI Assistant Suggestion */}
-                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="text-blue-400 text-xl">🤖</div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-blue-300 mb-1">Not sure which model to choose?</h4>
-                        <p className="text-sm text-blue-200 mb-3">
-                          Our AI assistant can analyze your specific use case and recommend the best model based on your data type, performance requirements, and goals.
-                        </p>
-                        <button 
-                          onClick={() => openChatWithMessage("I need help choosing the right model for my fine-tuning project. Can you help me select the best model based on my use case and data?")}
-                          className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  {/* AI Assistant Suggestion - Closable */}
+                  {showRecommendationsBanner && (
+                    <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="text-blue-400 text-xl">🤖</div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-blue-300 mb-1">Not sure which model to choose?</h4>
+                          <p className="text-sm text-blue-200 mb-3">
+                            Our AI assistant can analyze your specific use case and recommend the best model based on your data type, performance requirements, and goals.
+                          </p>
+                          <button 
+                            onClick={() => openChatWithMessage("I need help choosing the right model for my fine-tuning project. Can you help me select the best model based on my use case and data?")}
+                            className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                          >
+                            💬 Get Model Recommendations
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => setShowRecommendationsBanner(false)}
+                          className="text-blue-400 hover:text-blue-300 transition-colors"
                         >
-                          💬 Get Model Recommendations
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
                         </button>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Simplified Search and Filters */}
+                  {/* Search and Filters Bar */}
                   <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col lg:flex-row gap-4">
                       {/* Search */}
-                      <div>
+                      <div className="flex-1">
                         <input
                           type="text"
                           value={searchQuery}
@@ -364,30 +376,80 @@ export default function FinetunePage() {
                         />
                       </div>
                       
-                      {/* License Filter */}
-                      <div className="flex items-center gap-4">
-                        <label className="text-sm text-gray-400">License:</label>
-                        <select
-                          value={selectedLicense}
-                          onChange={(e) => setSelectedLicense(e.target.value)}
-                          className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="all">All Licenses</option>
-                          {allLicenses.map(license => (
-                            <option key={license} value={license}>{license}</option>
-                          ))}
-                        </select>
-                      </div>
+                      {/* Filter Buttons */}
+                      <div className="flex gap-2">
+                        {/* License Filter */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowLicenseFilters(!showLicenseFilters)}
+                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${
+                              selectedLicense !== 'all' || showLicenseFilters
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-300'
+                                : 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            License
+                            {selectedLicense !== 'all' && (
+                              <span className="bg-blue-600 text-white text-xs px-1 rounded">1</span>
+                            )}
+                            <svg 
+                              className={`w-4 h-4 transition-transform ${showLicenseFilters ? 'rotate-180' : ''}`} 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          
+                          {/* License Dropdown */}
+                          {showLicenseFilters && (
+                            <div className="absolute top-full mt-2 right-0 w-48 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-10">
+                              <div className="p-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedLicense('all');
+                                    setShowLicenseFilters(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                                    selectedLicense === 'all' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                                  }`}
+                                >
+                                  All Licenses
+                                </button>
+                                {allLicenses.map(license => (
+                                  <button
+                                    key={license}
+                                    onClick={() => {
+                                      setSelectedLicense(license);
+                                      setShowLicenseFilters(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                                      selectedLicense === license ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {license}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Tag Filters - Collapsible */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm text-gray-400">Filter by tags:</label>
+                        {/* Tag Filter */}
+                        <div className="relative">
                           <button
                             onClick={() => setShowTagFilters(!showTagFilters)}
-                            className="text-sm text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                            className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${
+                              selectedTags.length > 0 || showTagFilters
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-300'
+                                : 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
                           >
-                            {showTagFilters ? 'Hide filters' : 'Show tag filters'}
+                            Tags
+                            {selectedTags.length > 0 && (
+                              <span className="bg-blue-600 text-white text-xs px-1 rounded">{selectedTags.length}</span>
+                            )}
                             <svg 
                               className={`w-4 h-4 transition-transform ${showTagFilters ? 'rotate-180' : ''}`} 
                               fill="none" 
@@ -397,71 +459,90 @@ export default function FinetunePage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </button>
+                          
+                          {/* Tag Dropdown */}
+                          {showTagFilters && (
+                            <div className="absolute top-full mt-2 right-0 w-64 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-10">
+                              <div className="p-3">
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="text-sm font-medium text-gray-300">Filter by tags</span>
+                                  {selectedTags.length > 0 && (
+                                    <button
+                                      onClick={() => setSelectedTags([])}
+                                      className="text-xs text-blue-400 hover:text-blue-300"
+                                    >
+                                      Clear all
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                  {allTags.map(tag => (
+                                    <button
+                                      key={tag}
+                                      onClick={() => {
+                                        setSelectedTags(prev => 
+                                          prev.includes(tag) 
+                                            ? prev.filter(t => t !== tag)
+                                            : [...prev, tag]
+                                        );
+                                      }}
+                                      className={`px-2 py-1 rounded text-xs transition-colors text-left ${
+                                        selectedTags.includes(tag)
+                                          ? "bg-blue-600 text-white"
+                                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                                      }`}
+                                    >
+                                      {tag}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        
-                        {showTagFilters && (
-                          <div className="space-y-3">
-                            <div className="flex flex-wrap gap-2">
-                              {allTags.map(tag => (
-                                <button
-                                  key={tag}
-                                  onClick={() => {
-                                    setSelectedTags(prev => 
-                                      prev.includes(tag) 
-                                        ? prev.filter(t => t !== tag)
-                                        : [...prev, tag]
-                                    );
-                                  }}
-                                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                                    selectedTags.includes(tag)
-                                      ? "bg-blue-600 text-white"
-                                      : "bg-gray-600 text-gray-300 hover:bg-gray-500"
-                                  }`}
-                                >
-                                  {tag}
-                                </button>
-                              ))}
-                            </div>
-                            {selectedTags.length > 0 && (
-                              <button
-                                onClick={() => setSelectedTags([])}
-                                className="text-sm text-gray-400 hover:text-gray-300"
-                              >
-                                Clear tag filters
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Show active tag filters even when collapsed */}
-                        {!showTagFilters && selectedTags.length > 0 && (
-                          <div className="mt-2">
-                            <div className="flex flex-wrap gap-1">
-                              <span className="text-xs text-gray-500">Active filters:</span>
-                              {selectedTags.map(tag => (
-                                <span
-                                  key={tag}
-                                  className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full flex items-center gap-1"
-                                >
-                                  {tag}
-                                  <button
-                                    onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
-                                    className="hover:bg-blue-700 rounded-full p-0.5"
-                                  >
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
+
+                    {/* Active Filters Display */}
+                    {(selectedLicense !== 'all' || selectedTags.length > 0) && (
+                      <div className="mt-3 pt-3 border-t border-gray-600">
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <span className="text-xs text-gray-400">Active filters:</span>
+                          {selectedLicense !== 'all' && (
+                            <span className="inline-flex items-center gap-1 text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
+                              License: {selectedLicense}
+                              <button
+                                onClick={() => setSelectedLicense('all')}
+                                className="hover:bg-blue-700 rounded-full p-0.5"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {selectedTags.map(tag => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center gap-1 text-xs bg-blue-600 text-white px-2 py-1 rounded-full"
+                            >
+                              {tag}
+                              <button
+                                onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                                className="hover:bg-blue-700 rounded-full p-0.5"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Models List */}
+                  {/* Models Grid */}
                   <div className="bg-gray-800/50 rounded-lg border border-gray-700">
                     <div className="p-4 border-b border-gray-700">
                       <h3 className="text-lg font-semibold">
@@ -469,76 +550,81 @@ export default function FinetunePage() {
                       </h3>
                     </div>
                     
-                    <div className="max-h-96 overflow-y-auto">
-                      <div className="p-4 space-y-3">
-                        {filteredModels.map((model: Model) => (
-                          <div
-                            key={model.id}
-                            onClick={() => setSelectedModel(model.id)}
-                            className={`p-4 rounded-lg border cursor-pointer transition-all hover:scale-[1.01] ${
-                              selectedModel === model.id
-                                ? "border-blue-500 bg-blue-500/10 shadow-lg"
-                                : "border-gray-600 hover:border-gray-500 bg-gray-700/30"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-white">{model.name}</h3>
-                                {model.isOurs && (
-                                  <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-medium">
-                                    Okailora
+                    <div className="p-6">
+                      {filteredModels.length > 0 ? (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 max-h-96 overflow-y-auto pr-2">
+                          {filteredModels.map((model: Model) => (
+                            <div
+                              key={model.id}
+                              onClick={() => setSelectedModel(model.id)}
+                              className={`p-4 rounded-lg border cursor-pointer transition-all hover:scale-[1.02] ${
+                                selectedModel === model.id
+                                  ? "border-blue-500 bg-blue-500/10 shadow-lg"
+                                  : "border-gray-600 hover:border-gray-500 bg-gray-700/30"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="font-semibold text-white text-sm">{model.name}</h4>
+                                  {model.isOurs && (
+                                    <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-medium">
+                                      Okailora
+                                    </span>
+                                  )}
+                                </div>
+                                {selectedModel === model.id && (
+                                  <div className="text-blue-400">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400 mb-3 leading-relaxed h-8 overflow-hidden">{model.description}</p>
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {model.tags.slice(0, 3).map((tag: string) => (
+                                  <span
+                                    key={tag}
+                                    className={`text-xs px-2 py-0.5 rounded ${
+                                      model.isOurs 
+                                        ? "bg-blue-600/20 text-blue-300"
+                                        : "bg-gray-600 text-gray-300"
+                                    }`}
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                                {model.tags.length > 3 && (
+                                  <span className="text-xs text-gray-500">
+                                    +{model.tags.length - 3}
                                   </span>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <span className="text-xs text-gray-400">{model.downloads} downloads</span>
-                                {selectedModel === model.id && (
-                                  <div className="text-xs text-blue-400 mt-1">✓ Selected</div>
-                                )}
+                              <div className="flex justify-between items-center text-xs text-gray-500">
+                                <span>{model.downloads} downloads</span>
+                                <span>{model.license}</span>
                               </div>
                             </div>
-                            <p className="text-sm text-gray-400 mb-3 leading-relaxed">{model.description}</p>
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {model.tags.slice(0, 4).map((tag: string) => (
-                                <span
-                                  key={tag}
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    model.isOurs 
-                                      ? "bg-blue-600/20 text-blue-300"
-                                      : "bg-gray-600 text-gray-300"
-                                  }`}
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                              {model.tags.length > 4 && (
-                                <span className="text-xs text-gray-500">
-                                  +{model.tags.length - 4} more
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-500">License: {model.license}</div>
-                          </div>
-                        ))}
-                        
-                        {filteredModels.length === 0 && (
-                          <div className="text-center py-8 text-gray-400">
-                            <div className="text-4xl mb-2">🔍</div>
-                            <p>No models found matching your criteria</p>
-                            <button 
-                              onClick={() => {
-                                setSearchQuery('');
-                                setSelectedTags([]);
-                                setSelectedLicense('all');
-                                setShowTagFilters(false);
-                              }}
-                              className="text-blue-400 hover:text-blue-300 text-sm mt-2"
-                            >
-                              Clear all filters
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 text-gray-400">
+                          <div className="text-4xl mb-4">🔍</div>
+                          <p className="mb-4">No models found matching your criteria</p>
+                          <button 
+                            onClick={() => {
+                              setSearchQuery('');
+                              setSelectedTags([]);
+                              setSelectedLicense('all');
+                              setShowTagFilters(false);
+                              setShowLicenseFilters(false);
+                            }}
+                            className="text-blue-400 hover:text-blue-300 text-sm"
+                          >
+                            Clear all filters
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
