@@ -135,14 +135,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    deployment_id:
-                      type: string
-                    type:
-                      type: string
-                    description:
-                      type: string
+                  $ref: '#/components/schemas/Deployment'
         default:
           description: Unexpected error
 
@@ -246,3 +239,22 @@ paths:
                 # TODO: define the schema for weights response
         default:
           description: Unexpected error
+
+components:
+  schemas:
+    Deployment:
+      type: object
+      properties:
+        name:
+          type: string
+        deployment_id:
+          type: string
+        type:
+          type: string
+          enum: ["segmentation", "classification", "bbox", "generation"]
+        description:
+          type: string
+        downloads:
+          type: integer
+        license:
+          type: string

@@ -2,10 +2,12 @@ package ca.kailo.berkeley
 
 import ca.kailo.berkeley.TrainRestController.Companion
 import ca.kailo.berkeley.api.InferenceAPI
+import ca.kailo.berkeley.model.Deployment
 import ca.kailo.berkeley.model.InferenceList200ResponseInner
 import ca.kailo.berkeley.model.InferenceStatus200Response
 import java.io.File
 import java.nio.file.Paths
+import java.util.Locale
 import org.springframework.core.io.Resource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -32,15 +34,8 @@ class InferenceRestController(
     // map of deploymentId -> Future representing the running job
     private val inferenceJobs = ConcurrentHashMap<String, Future<*>>()
 
-    override fun inferenceList(): ResponseEntity<List<InferenceList200ResponseInner>> {
-        val list = deploymentRegistry.getAll().map {
-            InferenceList200ResponseInner(
-                it.id,
-                it.type.path,
-                it.description
-            )
-        }
-        return ResponseEntity.ok(list)
+    override fun inferenceList(): ResponseEntity<List<Deployment>> {
+        return ResponseEntity.ok(deploymentRegistry.getAll().toList())
     }
 
     override fun inferenceUploadData(deploymentId: String, file: Resource?): ResponseEntity<Unit> {
@@ -50,7 +45,7 @@ class InferenceRestController(
 
     override fun inferenceStart(deploymentId: String, body: Any): ResponseEntity<Unit> {
         val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId)
-        val configPath = deploymentRegistry.get(deploymentId)!!.type.path + ".yaml"
+        val configPath = deploymentRegistry.get(deploymentId)!!.type!!.value.lowercase(Locale.getDefault()) + ".yaml"
 
         // --- new: unzip into ../model_zoo/data/datasets/DEPLOYMENT_ID ---
         val datasetsRoot = Paths.get("..", "model_zoo", "data", "inference_datasets")
