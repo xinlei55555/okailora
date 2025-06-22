@@ -69,7 +69,16 @@ export default function InferencePage() {
 		
 		if (filesToUpload.length === 0) return;
 
-		console.log(`Starting upload of ${filesToUpload.length} files to backend...`);
+		// Get the deployment ID for the selected model
+		const deploymentId = await getDeploymentId(selectedModel);
+		
+		if (!deploymentId) {
+			console.error('Could not find deployment ID for selected model:', selectedModel);
+			alert('Failed to upload files: Model deployment not found. Please try selecting a different model.');
+			return;
+		}
+
+		console.log(`Starting upload of ${filesToUpload.length} files to backend using deployment ID: ${deploymentId}...`);
 
 		for (const fileData of filesToUpload) {
 			if (!fileData.file) continue;
@@ -99,8 +108,8 @@ export default function InferencePage() {
 					file: fileData.file
 				};
 
-				// Call the actual API
-				await InferenceService.inferenceUploadData(sessionId, formData);
+				// Call the actual API with deployment ID
+				await InferenceService.inferenceUploadData(deploymentId, formData);
 
 				// Clear progress interval and update status to completed
 				clearInterval(progressInterval);
@@ -180,6 +189,32 @@ export default function InferencePage() {
 		return 'generation';
 	};
 
+	// Function to get deployment ID from selected model
+	const getDeploymentId = async (modelId: string): Promise<string | null> => {
+		try {
+			// Get all deployments from the API
+			const deployments = await InferenceService.inferenceList();
+			
+			if (Array.isArray(deployments)) {
+				// Find the deployment that matches our selected model
+				const deployment = deployments.find(d => {
+					const transformedModelId = d.deployment_id || `okailora/${d.name || 'unknown'}`;
+					return transformedModelId === modelId;
+				});
+				
+				if (deployment && deployment.deployment_id) {
+					return deployment.deployment_id;
+				}
+			}
+			
+			console.error('Could not find deployment for model:', modelId);
+			return null;
+		} catch (error) {
+			console.error('Failed to fetch deployments:', error);
+			return null;
+		}
+	};
+
 	// Function to start inference
 	const handleStartInference = async () => {
 		if (!selectedModel) {
@@ -190,12 +225,19 @@ export default function InferencePage() {
 		try {
 			console.log('Starting inference process...');
 			
-			const modelType = getModelType(selectedModel);
-			console.log(`Model type determined: ${modelType} for model: ${selectedModel} - sending inference start request`);
+			// Get the deployment ID for the selected model
+			const modelDeploymentId = await getDeploymentId(selectedModel);
 			
-			const response = await InferenceService.inferenceStart(sessionId, {
-				model_type: modelType
-			});
+			if (!modelDeploymentId) {
+				console.error('Could not find deployment ID for selected model:', selectedModel);
+				alert('Failed to start inference: Model deployment not found. Please try selecting a different model.');
+				return;
+			}
+			
+			console.log(`Using model deployment ID: ${modelDeploymentId} for model: ${selectedModel}`);
+			
+			// Call the backend inference start with the model's deployment ID
+			const response = await InferenceService.inferenceStart(modelDeploymentId);
 			
 			console.log('Inference started successfully:', response);
 			
