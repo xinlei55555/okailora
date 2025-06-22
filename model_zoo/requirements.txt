@@ -18,3 +18,4 @@ tqdm #==4.66.5
 train #==0.0.5
 wandb #==0.18.0
 xtcocotools #==1.14.3
+yacs

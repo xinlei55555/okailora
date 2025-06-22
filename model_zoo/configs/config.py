@@ -46,7 +46,7 @@ def get_cfg(
     _cfg.BATCH_SIZE = batch_size if batch_size is not None else _cfg.BATCH_SIZE
     _cfg.WANDB.USE_WANDB = use_wandb if use_wandb is not None else _cfg.WANDB.USE_WANDB
     _cfg.DATASET.DATASET_PATH = dataset_path if dataset_path is not None else _cfg.DATASET.DATASET_PATH
-    _cfg.EVAL_ONLY = inference_mode if inference_mode is not None else _cfg.EVAL_ONLY
+    _cfg.EVAL_ONLY = inference_mode
     if use_wandb:
         _cfg.WANDB.WANDB_ID = _cfg.MODEL.UUID
 

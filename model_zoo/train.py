@@ -1,8 +1,6 @@
 import os
 import torch
-import wandb
 import argparse
-import uuid
 
 import schedulefree
 from models import load_model  # updated import
@@ -37,8 +35,7 @@ def parse_args():
         use_wandb=True if args.use_wandb > 0 else False,
         checkpoint_name=os.path.join(
             "${ROOT_DIR}", 'checkpoints', 'lora_weights', args.deployment_id,),
-        dataset_path=os.path.join(
-            "${ROOT_DIR}", 'data', 'datasets', args.deployment_id,),
+        dataset_path=args.data_path,
         inference_mode=True if args.inference_mode > 0 else False,
     )
     print(f'[INFO] Config file: {config}')
@@ -46,6 +43,7 @@ def parse_args():
 
 
 def train(config):
+    print(f"Running training...")
     dataset_class = load_dataset_instance(config.MODEL_NAME, config.DATASET.DATASET_PATH)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,10 +53,20 @@ def train(config):
         'pin_memory': True,
         'persistent_workers': False,
     }
+    
     train_loader = DataLoader(
         dataset_class, batch_size=config.BATCH_SIZE, shuffle=True, **common_loader_params)
     val_loader = DataLoader(dataset_class, batch_size=1,
                             shuffle=False, **common_loader_params)
+
+    num_classes = None
+    if config.MODEL_NAME == 'classification':
+        num_classes = dataset_class.get_num_classes()
+        print('[INFO] Number of classes in dataset:', num_classes)
+        config.defrost()
+        config.MODEL.NUM_CLASSES = num_classes
+        config.freeze()
+
 
     model = load_model(config, inference_mode=False)
     model.to(device)
@@ -97,13 +105,6 @@ def train(config):
     create_directory_if_not_exists(checkpoint_dir)
     checkpoint_path = os.path.join(checkpoint_dir, 'best_model.pth.tr')
 
-    # wandb_id = config.WANDB_ID if config.WANDB_ID != -1 else str(uuid.uuid4())
-
-    # if config.USE_WANDB:
-    #     os.environ["WANDB__SERVICE_WAIT"] = "3000"
-    #     wandb.init(id=wandb_id, project=config.MODEL_NAME,
-    #                name=config.CHECKPOINT_NAME)
-
     best_val_loss = float('inf')
     for epoch in range(config.START_EPOCH, config.EPOCH_NUMBER):
         print(f"[INFO] Epoch {epoch}")
@@ -124,7 +125,7 @@ def train(config):
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            save_checkpoint(model, checkpoint_path)
+            save_checkpoint(model, checkpoint_path, num_classes)
             print(f"[INFO] Checkpoint saved: {checkpoint_path}")
 
         model.train()
@@ -149,47 +150,37 @@ def train(config):
 
         print("pipe:{\"epoch\":"+str(epoch)+",\"train_loss\":"+str(loss)+",\"val_loss\":"+str(val_loss)+"}")
 
-        # if config.USE_WANDB:
-        #     wandb.log({"epoch": epoch, "train_loss": total_loss /
-        #               len(train_loader), "val_loss": val_loss})
-
-    # if config.USE_WANDB:
-    #     wandb.finish()
-
 def inference(config):
-    dataset_class = load_dataset_instance(config.MODEL_NAME, config.DATASET.DATASET_PATH)
+    print('Running inference...')
+    dataset_class = load_dataset_instance(config.MODEL_NAME, config.DATASET.DATASET_PATH, inference=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    num_workers = 0
-    common_loader_params = {
-        'num_workers': num_workers,
-        'pin_memory': True,
-        'persistent_workers': False,
-    }
-    val_loader = DataLoader(dataset_class, batch_size=1,
-                            shuffle=False, **common_loader_params)
-
-    model = load_model(config, inference_mode=True)
-    model.to(device)
-    model.eval()
-
+    
     checkpoint_path = os.path.join(config.CHECKPOINT_NAME, 'best_model.pth.tr')
     if os.path.exists(checkpoint_path):
         print(f"[INFO] Loading checkpoint from {checkpoint_path}")
         checkpoint = torch.load(checkpoint_path, map_location=device)
-        model.load_state_dict(checkpoint['model'], strict=False)
     else:
+        checkpoint = None
         print(f"[ERROR] Checkpoint not found: {checkpoint_path}")
         return
+        
+    if config.MODEL_NAME == 'classification':
+        try:
+            num_classes = checkpoint['num_classes']
+        except KeyError:
+            print("[ERROR] 'num_classes' not found in checkpoint. Using dataset class count.")
+        
+        config.defrost()
+        config.MODEL.NUM_CLASSES = num_classes
+        config.freeze()
+    
+    
 
-    with torch.no_grad():
-        for i, batch in enumerate(val_loader):
-            inputs, targets = batch
-            inputs, targets = inputs.to(device), targets.to(device)
-
-            outputs = model(x=inputs)
-            # Process outputs as needed
-            print(f"[INFERENCE] Batch {i}: Outputs: {outputs}")
+    model = load_model(config, inference_mode=True)
+    model.to(device)
+    model.eval()
+    
 
 def main():
     config = parse_args()

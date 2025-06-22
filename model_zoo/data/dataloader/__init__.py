@@ -3,10 +3,11 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 class BaseDataset(Dataset):
-    def __init__(self, data_root_dir, transform=None):
+    def __init__(self, data_root_dir, transform=None, inference=False):
         self.data_root_dir = data_root_dir
         self.transform = transform if transform else self._base_reshape(img_shape=224)
         self.samples = self._scan_files()
+        self.inference = inference
         print(f"Found {len(self.samples)} samples in {data_root_dir}")
 
     def _scan_files(self):
@@ -52,7 +53,7 @@ def load_dataset(model_type):
         raise ValueError(f"Unknown model type: {model_type}")
 
     
-def load_dataset_instance(model_type, data_root_dir, transform=None):
+def load_dataset_instance(model_type, data_root_dir, transform=None, inference=False):
     dataset_class = load_dataset(model_type)
     dataset_kwargs = {
         'data_root_dir': data_root_dir,
@@ -61,4 +62,4 @@ def load_dataset_instance(model_type, data_root_dir, transform=None):
     if model_type == 'bbox':
         dataset_kwargs['bbox_json_path'] = os.path.join(data_root_dir, 'bbox.json')
 
-    return dataset_class(data_root_dir=data_root_dir, transform=transform)
+    return dataset_class(data_root_dir=data_root_dir, transform=transform, inference=inference,)

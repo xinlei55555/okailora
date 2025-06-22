@@ -6,12 +6,16 @@ import os
 from data.dataloader import BaseDataset
 
 class ClassificationDataset(BaseDataset):
-    def __init__(self, data_root_dir, transform=None):
-        super().__init__(data_root_dir, transform)
+    def __init__(self, data_root_dir, transform=None, inference=False):
+        super().__init__(data_root_dir, transform, inference)
         self.class_to_idx = {
             class_name: i for i, class_name in enumerate(sorted(os.listdir(data_root_dir)))
         }
-        
+        self.num_classes = len(self.class_to_idx)
+    
+    def get_num_classes(self):
+        return self.num_classes
+
     # Override 
     def _scan_files(self):
         image_exts = ('.png', '.jpg', '.jpeg')
@@ -26,6 +30,9 @@ class ClassificationDataset(BaseDataset):
         img_path = self.samples[idx]
         image = Image.open(img_path).convert("RGB")
         image = self.transform(image)
-        label_name = os.path.basename(os.path.dirname(img_path))
-        label = self.class_to_idx[label_name]
-        return image, torch.tensor(label)
+        if not self.inference:
+            label_name = os.path.basename(os.path.dirname(img_path))
+            label = self.class_to_idx[label_name]
+            return image, torch.tensor(label)
+        else:
+            return image, img_path

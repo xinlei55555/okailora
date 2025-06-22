@@ -5,7 +5,8 @@ import torch
 def load_model(config):
     # check number of subfolders in dataset_dir
     dataset_dir = config.DATASET.DATASET_PATH
-    num_classes = len([name for name in os.listdir(dataset_dir) if os.path.isdir(os.path.join(dataset_dir, name))])
+    num_classes = config.MODEL.NUM_CLASSES 
+    
     # Load pretrained ViT (same as 'vit-base-patch16-224')
     model = timm.create_model('vit_base_patch16_224', pretrained=True)
 
