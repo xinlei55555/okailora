@@ -29,7 +29,7 @@ class Storage {
      * Saves the provided resource as a ZIP file under the deployment ID.
      */
     fun saveData(type: StorageType, deploymentId: String, resource: Resource): Path {
-        val targetPath = uploadDir.resolve(getDataPath(type, deploymentId))
+        val targetPath = getDataPath(type, deploymentId)
         Files.createFile(targetPath)
         resource.inputStream.use { input ->
             Files.copy(input, targetPath, StandardCopyOption.REPLACE_EXISTING)
@@ -40,8 +40,8 @@ class Storage {
     /**
      * Retrieves the stored ZIP path for the given deployment ID, or null if not found.
      */
-    fun getDataPath(type: StorageType, deploymentId: String): String {
-        return "${type.path}/$deploymentId.zip"
+    fun getDataPath(type: StorageType, deploymentId: String): Path {
+        return uploadDir.resolve("${type.path}/$deploymentId.zip")
     }
 
     enum class StorageType(val path: String) {

@@ -100,14 +100,16 @@ paths:
                 properties:
                   finished:
                     type: boolean
-                  metrics:
-                    type: object
-                    properties:
-                      val_loss:
-                        $ref: '#/components/schemas/Metric'
-                      train_loss:
-                        $ref: '#/components/schemas/Metric'
-
+                  val_loss:
+                    type: array
+                    items:
+                      type: number
+                      format: float
+                  train_loss:
+                    type: array
+                    items:
+                      type: number
+                      format: float
 
   /inference/list:
     get:
@@ -234,17 +236,3 @@ paths:
                 # TODO: define the schema for weights response
         default:
           description: Unexpected error
-
-components:
-  schemas:
-    Metric:
-      properties:
-        data_points:
-          type: array
-          items:
-            properties:
-              epoch:
-                type: integer
-              value:
-                type: number
-                format: float

@@ -10,12 +10,17 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import org.slf4j.LoggerFactory
 
 @RestController
 class InferenceRestController(
     private val storage: Storage,
     private val deploymentRegistry: DeploymentRegistry
 ) : InferenceAPI {
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(TrainRestController::class.java)
+    }
 
     // thread‐pool for running inference jobs
     private val executor = Executors.newCachedThreadPool()
@@ -40,15 +45,20 @@ class InferenceRestController(
     }
 
     override fun inferenceStart(deploymentId: String, body: Any): ResponseEntity<Unit> {
-        val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId)
+        val zipPath = storage.getDataPath(Storage.StorageType.INFERENCE, deploymentId).toString()
         val configPath = deploymentRegistry.get(deploymentId)!!.type.path + ".yaml"
+
         val processBuilder = ProcessBuilder(
-            "python3", "-u",
-            "inference.py",
-            "--config", configPath,
-            "--deployment_id", deploymentId,
-            "--data_path", zipPath
+            "bash", "-c",
+            "source ../model_zoo/venv/bin/activate && " +
+                    "python3 -u ../model_zoo/train.py " +
+                    "--inference_mode 1 " +
+                    "--config $configPath " +
+                    "--data_path $zipPath " +
+                    "--deployment_id $deploymentId"
         ).inheritIO()
+
+        logger.info("Running ${processBuilder.command().joinToString(" ")}")
 
         // submit job asynchronously
         val future: Future<*> = executor.submit {

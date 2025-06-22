@@ -4,11 +4,13 @@ import ca.kailo.berkeley.api.TrainAPI
 import ca.kailo.berkeley.model.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.nio.file.Paths
 import org.springframework.core.io.Resource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.*
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 
 @RestController
 class TrainRestController(
@@ -43,6 +45,25 @@ class TrainRestController(
         // ensure data is uploaded
         val zipPath = storage.getDataPath(Storage.StorageType.TRAIN, deploymentId)
 
+        // --- new: unzip into ../model_zoo/data/datasets/DEPLOYMENT_ID ---
+        val datasetsRoot = Paths.get("..", "model_zoo", "data", "datasets")
+        val targetDir = datasetsRoot.resolve(deploymentId).toFile()
+        if (!targetDir.exists()) {
+            targetDir.parentFile.mkdirs()
+            targetDir.mkdirs()
+        }
+
+        logger.info("Unzipping {} into {}", zipPath, targetDir.absolutePath)
+        val unzipProcess = ProcessBuilder("unzip", "-o", zipPath.toString(), "-d", targetDir.absolutePath)
+            .redirectErrorStream(true)
+            .start()
+        val unzipExit = unzipProcess.waitFor()
+        if (unzipExit != 0) {
+            logger.error("Failed to unzip {} (exit code {})", zipPath, unzipExit)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+        // ---------------------------------------------------------------
+
         val type = Deployment.Type.of(trainStartRequest.modelType.value)
             ?: throw IllegalArgumentException("Unknown model type")
         val deployment = Deployment(deploymentId, type, "sample description")
@@ -53,14 +74,16 @@ class TrainRestController(
         valLoss[deploymentId] = CopyOnWriteArrayList()
 
         val processBuilder = ProcessBuilder(
-            "python3", "-u",
-            "train.py",
+            "../model_zoo/venv/bin/python", "-u",
+            "../model_zoo/train.py",
             "--config", "${type.path}.yaml",
-            "--data_path", zipPath,
+            "--data_path", zipPath.toString(),
             "--deployment_id", deploymentId
         )
 
-        processBuilder.redirectErrorStream()
+        logger.info("Running ${processBuilder.command().joinToString(" ")}")
+
+        processBuilder.redirectErrorStream(true)
 
         val future: Future<*> = executor.submit {
             try {
@@ -74,8 +97,8 @@ class TrainRestController(
                         if (line!!.startsWith("pipe:")) {
                             val json  = line!!.removePrefix("pipe:")
                             val entry = objectMapper.readValue(json, LogSchema::class.java)
-                            trainLoss[deploymentId]?.add(DataPoint(entry.epoch, entry.trainLoss))
-                            valLoss  [deploymentId]?.add(DataPoint(entry.epoch, entry.valLoss))
+                            trainLoss[deploymentId]!!.add(DataPoint(entry.epoch, entry.trainLoss))
+                            valLoss  [deploymentId]!!.add(DataPoint(entry.epoch, entry.valLoss))
                             logger.info("LOGGING POINT: {}", entry)
                         }
                     }
@@ -101,13 +124,14 @@ class TrainRestController(
         val valPts = valLoss[deploymentId].orEmpty()
         val trainPts = trainLoss[deploymentId].orEmpty()
 
-        val valMetric = Metric(valPts.map { MetricDataPointsInner(it.epoch, it.value) })
-        val trainMetric = Metric(trainPts.map { MetricDataPointsInner(it.epoch, it.value) })
+        val valMetric = valPts.sortedBy { it.epoch }.map { it.value }.toList()
+        val trainMetric = trainPts.sortedBy { it.epoch }.map { it.value }.toList()
 
         return ResponseEntity.ok(
             TrainStatus200Response(
                 finished,
-                TrainStatus200ResponseMetrics(valMetric, trainMetric)
+                valMetric,
+                trainMetric
             )
         )
     }
