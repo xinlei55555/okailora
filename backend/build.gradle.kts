@@ -59,9 +59,9 @@ tasks.jar {
 }
 
 tasks.openApiGenerate {
-    generatorName.set("kotlin-spring") // or "java" if you prefer
-    inputSpec.set("$rootDir/src/main/resources/openapi.yml") // adjust as needed
-    outputDir.set("$buildDir/generated") // destination of generated sources
+    generatorName.set("kotlin-spring")
+    inputSpec.set("$rootDir/src/main/resources/openapi.yml")
+    outputDir.set("$buildDir/generated")
     apiPackage.set("ca.kailo.berkeley.api")
     modelPackage.set("ca.kailo.berkeley.model")
     invokerPackage.set("ca.kailo.berkeleyinvoker")
