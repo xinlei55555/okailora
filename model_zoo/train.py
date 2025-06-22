@@ -44,7 +44,8 @@ def parse_args():
 
 def train(config):
     print(f"Running training...")
-    dataset_class = load_dataset_instance(config.MODEL_NAME, config.DATASET.DATASET_PATH)
+    train_dataset_class = load_dataset_instance(config.MODEL_NAME, os.path.join(config.DATASET.DATASET_PATH, 'train'))
+    val_dataset_class = load_dataset_instance(config.MODEL_NAME, os.path.join(config.DATASET.DATASET_PATH, 'val'))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     num_workers = 0
@@ -55,13 +56,15 @@ def train(config):
     }
     
     train_loader = DataLoader(
-        dataset_class, batch_size=config.BATCH_SIZE, shuffle=True, **common_loader_params)
-    val_loader = DataLoader(dataset_class, batch_size=1,
+        train_dataset_class, batch_size=config.BATCH_SIZE, shuffle=True, **common_loader_params)
+    val_loader = DataLoader(val_dataset_class, batch_size=1,
                             shuffle=False, **common_loader_params)
 
     num_classes = None
+    class_to_idx = None
     if config.MODEL_NAME == 'classification':
-        num_classes = dataset_class.get_num_classes()
+        num_classes = train_dataset_class.get_num_classes()
+        class_to_idx = train_dataset_class.class_to_idx
         print('[INFO] Number of classes in dataset:', num_classes)
         config.defrost()
         config.MODEL.NUM_CLASSES = num_classes
@@ -125,7 +128,7 @@ def train(config):
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            save_checkpoint(model, checkpoint_path, num_classes)
+            save_checkpoint(model, checkpoint_path, num_classes, class_to_idx)
             print(f"[INFO] Checkpoint saved: {checkpoint_path}")
 
         model.train()
@@ -168,6 +171,7 @@ def inference(config):
     if config.MODEL_NAME == 'classification':
         try:
             num_classes = checkpoint['num_classes']
+            class_to_idx = checkpoint['class_to_idx']
         except KeyError:
             print("[ERROR] 'num_classes' not found in checkpoint. Using dataset class count.")
         
@@ -191,6 +195,11 @@ def inference(config):
 
             if config.MODEL_NAME == 'classification':
                 outputs = torch.argmax(outputs, dim=1)
+                for output, i in class_to_idx.items():
+                    if i == outputs.item():
+                        text_output = output
+                        break
+                print(f"[INFO] Textual model class: {text_output}")
             print(f"[INFO] Inference {i+1}/{len(inference_loader)}: {model_paths[0]}")
             print(f"[INFO] Model output: {outputs}")
 

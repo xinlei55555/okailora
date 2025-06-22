@@ -3,3 +3,4 @@ datasets/
 *.tr
 __pycache__/
 inference_datasets/
+.idea

@@ -32,7 +32,7 @@ def count_param_numbers(model):
         model_params = model_params + parameter.numel()
     return model_params
 
-def save_checkpoint(model, checkpoint_path, num_classes=None):
+def save_checkpoint(model, checkpoint_path, num_classes=None, class_to_idx=None):
     '''Save only unfrozen (trainable) model weights and other training states'''
     
     # Filter only parameters that require gradients
@@ -44,4 +44,5 @@ def save_checkpoint(model, checkpoint_path, num_classes=None):
     torch.save({
         'model': trainable_state_dict,
         'num_classes': num_classes,
+        'class_to_idx': class_to_idx,
     }, checkpoint_path)
