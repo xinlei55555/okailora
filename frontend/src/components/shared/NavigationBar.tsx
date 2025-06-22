@@ -50,14 +50,16 @@ export default function NavigationBar({
 	return (
 		<div className="flex justify-between">
 			{/* Back Button */}
-			{prevStep && (
-				<button
-					onClick={prevStep.onClick}
-					className={`${baseButtonClass} ${secondaryButtonClass}`}
-				>
-					← Back to {prevStep.label}
-				</button>
-			)}
+			<div>
+				{prevStep && (
+					<button
+						onClick={prevStep.onClick}
+						className={`${baseButtonClass} ${secondaryButtonClass}`}
+					>
+						← Back to {prevStep.label}
+					</button>
+				)}
+			</div>
 			
 			{/* Forward Actions */}
 			<div className="flex gap-4">
