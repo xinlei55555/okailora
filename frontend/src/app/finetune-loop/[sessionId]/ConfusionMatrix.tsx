@@ -1,27 +1,15 @@
 import { Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-interface ConfusionMatrixData {
-  name: string;
-  value: number;
-  x: number;
-  y: number;
-  isCorrect: boolean;
+interface ConfusionMatrixProps {
+  confusionData: number[][];
+  labels: string[];
 }
 
-export default function ConfusionMatrix() {
-  // Mock confusion matrix data for demonstration
-  const confusionData = [
-    [85, 2, 1, 0],
-    [3, 82, 3, 0],
-    [1, 4, 79, 2],
-    [0, 1, 2, 91]
-  ];
-  
-  const labels = ['Class A', 'Class B', 'Class C', 'Class D'];
+export default function ConfusionMatrix({ confusionData, labels }: ConfusionMatrixProps) {
   const maxValue = Math.max(...confusionData.flat());
 
   // Convert matrix to heatmap data for visualization
-  const heatmapData: ConfusionMatrixData[] = [];
+  const heatmapData: any[] = [];
   confusionData.forEach((row, rowIdx) => {
     row.forEach((value, colIdx) => {
       heatmapData.push({
@@ -47,9 +35,8 @@ export default function ConfusionMatrix() {
     <div className="h-full bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-100">Confusion Matrix</h3>
-        <span className="text-sm text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">Accuracy: 92.7%</span>
+        <span className="text-sm text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">Accuracy: {/* You can compute accuracy here if desired */}</span>
       </div>
-      
       <div className="flex-1 bg-gray-900/50 rounded-lg p-4 border border-gray-700/30 flex flex-col">
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-sm">
@@ -57,13 +44,11 @@ export default function ConfusionMatrix() {
             <div className="flex justify-center mb-3">
               <span className="text-sm text-gray-400 font-medium">Predicted</span>
             </div>
-            
             <div className="flex">
               {/* Y-axis label */}
               <div className="flex flex-col justify-center mr-3">
                 <span className="text-sm text-gray-400 font-medium transform -rotate-90 whitespace-nowrap">Actual</span>
               </div>
-              
               {/* Matrix */}
               <div className="flex-1">
                 {/* Column headers */}
@@ -74,7 +59,6 @@ export default function ConfusionMatrix() {
                     </div>
                   ))}
                 </div>
-                
                 {/* Matrix cells */}
                 <div className="space-y-1">
                   {confusionData.map((row, rowIdx) => (
@@ -106,7 +90,6 @@ export default function ConfusionMatrix() {
             </div>
           </div>
         </div>
-        
         {/* Legend */}
         <div className="mt-4 pt-3 border-t border-gray-700/50">
           <div className="flex items-center justify-between text-sm text-gray-400">
@@ -120,7 +103,7 @@ export default function ConfusionMatrix() {
                 <span>Incorrect</span>
               </div>
             </div>
-            <span>Total: 348 samples</span>
+            <span>Total: {/* You can compute total here if desired */}</span>
           </div>
         </div>
       </div>

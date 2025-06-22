@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useChatContext } from '@/components/ChatWidget';
 import { TrainService } from '@/api';
@@ -13,6 +13,22 @@ import ConfusionMatrix from './ConfusionMatrix';
 import ROCCurve from './ROCCurve';
 import LogsModal from './LogsModal';
 import ConfigModal from './ConfigModal';
+
+// --- Add types for ROC and ConfusionMatrix props ---
+interface ROCPoint {
+  fpr: number;
+  tpr: number;
+}
+
+interface ConfusionMatrixProps {
+  confusionData: number[][];
+  labels: string[];
+}
+
+interface ROCCurveProps {
+  rocData: ROCPoint[];
+  auc: number;
+}
 
 export default function FinetuneLoopPage() {
   const params = useParams();
@@ -156,6 +172,48 @@ export default function FinetuneLoopPage() {
     return elapsedSeconds > 0 ? totalSamples / elapsedSeconds : 0;
   };
 
+  // --- Generate mock ROC and confusion matrix data from valLossData ---
+  const rocData = useMemo(() => {
+    // Use last 10 valLossData points to create a fake ROC curve
+    if (valLossData.length === 0) return [
+      { fpr: 0, tpr: 0 }, { fpr: 1, tpr: 1 }
+    ];
+    const base = Math.max(0.5, 1 - (valLossData[valLossData.length - 1].value || 0));
+    return Array.from({ length: 11 }, (_, i) => {
+      const fpr = i / 10;
+      // tpr increases with fpr, but modulated by base
+      const tpr = Math.min(1, Math.pow(fpr, 0.7) * base + (1 - base) * fpr);
+      return { fpr, tpr };
+    });
+  }, [valLossData]);
+
+  const auc = useMemo(() => {
+    // Approximate AUC as the mean tpr (trapezoidal rule)
+    if (rocData.length < 2) return 0.5;
+    let aucSum = 0;
+    for (let i = 1; i < rocData.length; i++) {
+      const dx = rocData[i].fpr - rocData[i - 1].fpr;
+      const avgY = (rocData[i].tpr + rocData[i - 1].tpr) / 2;
+      aucSum += dx * avgY;
+    }
+    return Math.round(aucSum * 1000) / 1000;
+  }, [rocData]);
+
+  const confusionData = useMemo(() => {
+    // 4x4 matrix, diagonal is high, off-diagonal is low, modulated by last valLoss
+    const base = valLossData.length > 0 ? Math.max(0.1, 1 - valLossData[valLossData.length - 1].value) : 0.8;
+    const total = 100;
+    const correct = Math.round(total * base);
+    const off = Math.round((total - correct) / 3);
+    return [
+      [correct, off, off, off],
+      [off, correct, off, off],
+      [off, off, correct, off],
+      [off, off, off, correct],
+    ];
+  }, [valLossData]);
+  const confusionLabels = ['Class A', 'Class B', 'Class C', 'Class D'];
+
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col">
       <TrainingHeader 
@@ -203,8 +261,8 @@ export default function FinetuneLoopPage() {
                 />
                 
                 {/* Row 2: ROC Curve and Confusion Matrix */}
-                <ROCCurve />
-                <ConfusionMatrix />
+                <ROCCurve rocData={rocData} auc={auc} />
+                <ConfusionMatrix confusionData={confusionData} labels={confusionLabels} />
             </div>
           </div>
         </main>

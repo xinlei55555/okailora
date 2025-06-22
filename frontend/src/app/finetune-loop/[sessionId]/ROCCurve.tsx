@@ -1,30 +1,22 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 
-export default function ROCCurve() {
-  // Mock ROC curve data for demonstration
-  const rocData = [
-    { fpr: 0, tpr: 0 },
-    { fpr: 0.05, tpr: 0.15 },
-    { fpr: 0.1, tpr: 0.35 },
-    { fpr: 0.15, tpr: 0.55 },
-    { fpr: 0.2, tpr: 0.72 },
-    { fpr: 0.25, tpr: 0.84 },
-    { fpr: 0.3, tpr: 0.91 },
-    { fpr: 0.4, tpr: 0.96 },
-    { fpr: 0.5, tpr: 0.98 },
-    { fpr: 0.7, tpr: 0.99 },
-    { fpr: 1, tpr: 1 }
-  ];
+interface ROCPoint {
+  fpr: number;
+  tpr: number;
+}
 
-  const auc = 0.947; // Area Under Curve
+interface ROCCurveProps {
+  rocData: ROCPoint[];
+  auc: number;
+}
 
+export default function ROCCurve({ rocData, auc }: ROCCurveProps) {
   return (
     <div className="h-full bg-gray-800/50 rounded-xl p-4 border border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-300 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-100">ROC Curve</h3>
         <span className="text-sm text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">AUC: {auc}</span>
       </div>
-      
       <div className="flex-1 bg-gray-900/50 rounded-lg p-4 border border-gray-700/30">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={rocData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
@@ -55,7 +47,6 @@ export default function ROCCurve() {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      
       <div className="mt-4 pt-3 border-t border-gray-700/50">
         <div className="flex items-center justify-between text-sm text-gray-400">
           <div className="flex items-center space-x-4">
