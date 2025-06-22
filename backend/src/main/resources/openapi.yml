@@ -76,6 +76,30 @@ paths:
         default:
           description: Unexpected error
 
+  /train/status:
+    post:
+      tags: [ Train ]
+      summary: Train status
+      description: Get status of train job
+      operationId: train_status
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status of train job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  finished:
+                    type: boolean
+                required: [ finished ]
+
   /inference/list:
     get:
       tags: [Inference]
@@ -154,6 +178,30 @@ paths:
           description: Inference started
         default:
           description: Unexpected error
+
+  /inference/status:
+    post:
+      tags: [Inference]
+      summary: Inference status
+      description: Get status of inference job
+      operationId: inference_status
+      parameters:
+        - in: header
+          name: deployment_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status of inference job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  finished:
+                    type: boolean
+                required: [finished]
 
   /inference/weights:
     get:
