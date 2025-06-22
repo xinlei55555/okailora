@@ -1,0 +1,1 @@
+ok please actually implement the other tabs too. also importantly for the inference there should be the most important buttons of share link adn export results.

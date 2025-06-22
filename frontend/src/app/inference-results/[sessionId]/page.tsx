@@ -5,36 +5,71 @@ import { useParams, useRouter } from 'next/navigation';
 import { InferenceService } from '@/api/services/InferenceService';
 
 interface BackendResult {
-  image?: string; // base64
+  image?: string; // image name
   classification?: string;
+  base64?: string; // base64 image data
 }
 
 export default function InferenceResultsPage() {
   const params = useParams();
   const router = useRouter();
-  const sessionId = params.sessionId as string;
+  const deploymentId = params.sessionId as string; // Using sessionId param but it's actually the deployment ID
   const [results, setResults] = useState<BackendResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'gallery' | 'analytics' | 'export'>('gallery');
 
   useEffect(() => {
+    console.log(`[InferenceResults] Starting to fetch results for deployment: ${deploymentId}`);
     setLoading(true);
     setError(null);
-    InferenceService.inferenceStatus(sessionId)
+    
+    InferenceService.inferenceStatus(deploymentId)
       .then((res) => {
+        console.log('[InferenceResults] Raw API response:', res);
+        console.log('[InferenceResults] Response type:', typeof res);
+        console.log('[InferenceResults] Response structure:', Object.keys(res || {}));
+        
         if (res && Array.isArray(res.result)) {
+          console.log(`[InferenceResults] Found ${res.result.length} results in response`);
+          console.log('[InferenceResults] First few results:', res.result.slice(0, 3));
+          
+          // Log details about each result
+          res.result.forEach((result, index) => {
+            console.log(`[InferenceResults] Result ${index}:`, {
+              hasImage: !!result.image,
+              imageName: result.image,
+              hasClassification: !!result.classification,
+              classification: result.classification,
+              hasBase64: !!result.base64,
+              base64Length: result.base64 ? result.base64.length : 0
+            });
+          });
+          
           setResults(res.result);
         } else {
+          console.warn('[InferenceResults] Response does not contain valid result array:', {
+            hasRes: !!res,
+            hasResult: !!(res && res.result),
+            resultType: res && res.result ? typeof res.result : 'undefined',
+            isArray: res && res.result ? Array.isArray(res.result) : false
+          });
           setResults([]);
         }
         setLoading(false);
+        console.log('[InferenceResults] Successfully completed fetching results');
       })
       .catch((e) => {
+        console.error('[InferenceResults] Error fetching results:', e);
+        console.error('[InferenceResults] Error details:', {
+          message: e.message,
+          stack: e.stack,
+          name: e.name
+        });
         setError('Failed to fetch results.');
         setLoading(false);
       });
-  }, [sessionId]);
+  }, [deploymentId]);
 
   // Gallery Tab: Scrollable grid of image results
   const renderGalleryTab = () => (
@@ -53,10 +88,10 @@ export default function InferenceResultsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {results.map((item, idx) => (
             <div key={idx} className="bg-gray-900 rounded-xl shadow-lg flex flex-col items-center p-4 border border-gray-800 hover:shadow-2xl transition-shadow">
-              {item.image ? (
+              {item.base64 ? (
                 <img
-                  src={`data:image/jpeg;base64,${item.image}`}
-                  alt={`result-${idx}`}
+                  src={`data:image/jpeg;base64,${item.base64}`}
+                  alt={item.image ? item.image : `result-${idx}`}
                   className="w-48 h-48 object-cover rounded-lg mb-4 border border-gray-700"
                 />
               ) : (
@@ -66,6 +101,9 @@ export default function InferenceResultsPage() {
               )}
               <div className="text-lg font-semibold text-center truncate w-full">
                 {item.classification || <span className="text-gray-500">No label</span>}
+              </div>
+              <div className="text-sm text-gray-400 mt-1 truncate w-full text-center">
+                {item.image || <span className="text-gray-600">No image name</span>}
               </div>
             </div>
           ))}
@@ -101,20 +139,20 @@ export default function InferenceResultsPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.push(`/inference-loop/${sessionId}`)}
+                onClick={() => router.push(`/inference/new-session`)}
                 className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>Back to Processing</span>
+                <span>Back to Inference</span>
               </button>
               <div className="text-xl font-bold text-blue-400">Okailora</div>
               <span className="text-gray-400">•</span>
               <h1 className="text-lg font-semibold">Inference Results</h1>
             </div>
             <div className="text-sm text-gray-400">
-              Session: {sessionId?.slice(0, 8)}...
+              Deployment: {deploymentId?.slice(0, 8)}...
             </div>
           </div>
         </div>
