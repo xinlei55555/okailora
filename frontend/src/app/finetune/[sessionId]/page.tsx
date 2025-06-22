@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useChatContext } from '@/components/ChatWidget';
+import { TrainService } from '@/api/services/TrainService';
 
 // Our custom models
 const ourModels = [
@@ -165,8 +166,8 @@ export default function FinetunePage() {
   });
 
   // Handle file upload
-  const handleFileUpload = (files: FileList) => {
-    Array.from(files).forEach(file => {
+  const handleFileUpload = async (files: FileList) => {
+    Array.from(files).forEach(async (file) => {
       const fileId = Math.random().toString(36).substr(2, 9);
       const uploadedFile: UploadedFile = {
         id: fileId,
@@ -180,22 +181,26 @@ export default function FinetunePage() {
 
       setUploadedFiles(prev => [...prev, uploadedFile]);
 
-      // Simulate upload progress
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
-          setUploadedFiles(prev => 
-            prev.map(f => f.id === fileId ? { ...f, status: 'completed', progress: 100 } : f)
-          );
-        } else {
-          setUploadedFiles(prev => 
-            prev.map(f => f.id === fileId ? { ...f, progress } : f)
-          );
-        }
-      }, 200);
+      try {
+        // Create a FormData with the file for the API call
+        const formData = {
+          file: file
+        };
+
+        // Call the actual API
+        await TrainService.trainUploadData(sessionId, formData);
+
+        // Update status to completed on success
+        setUploadedFiles(prev => 
+          prev.map(f => f.id === fileId ? { ...f, status: 'completed', progress: 100 } : f)
+        );
+      } catch (error) {
+        console.error('Upload failed:', error);
+        // Update status to error on failure
+        setUploadedFiles(prev => 
+          prev.map(f => f.id === fileId ? { ...f, status: 'error', progress: 0 } : f)
+        );
+      }
     });
   };
 
