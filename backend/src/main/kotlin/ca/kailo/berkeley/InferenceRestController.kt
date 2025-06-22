@@ -130,11 +130,11 @@ class InferenceRestController(
         val data = classifications[deploymentId].orEmpty()
         val inner = mutableListOf<InferenceStatus200ResponseResultInner>()
         data.forEach {
-            inner.add(InferenceStatus200ResponseResultInner(it.image, it.classification))
+            inner.add(InferenceStatus200ResponseResultInner(it.image, it.classification, it.base64))
         }
         return ResponseEntity.ok(InferenceStatus200Response(finished, inner))
     }
 
-    data class LogSchema(val image: String, val classification: String)
+    data class LogSchema(val image: String, val classification: String, val base64: String)
 
 }

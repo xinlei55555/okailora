@@ -1,10 +1,15 @@
+import base64
 import os
+from io import BytesIO
+from pathlib import Path
 
 import numpy as np
 import torch
 import argparse
 
 import schedulefree
+from PIL import Image
+
 from models import load_model  # updated import
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -229,6 +234,29 @@ def inference(config):
     model = load_model(config, inference_mode=True)
     model.to(device)
     model.eval()
+
+    def image_to_lowres_base64(path_str, max_size=(256, 256)):
+        path = Path(path_str)
+        img = Image.open(path)
+        img.thumbnail(max_size)
+
+        # Infer format from extension (default to PNG)
+        ext_to_format = {
+            '.jpg': 'JPEG',
+            '.jpeg': 'JPEG',
+            '.png': 'PNG',
+            '.webp': 'WEBP',
+            '.bmp': 'BMP',
+            '.tiff': 'TIFF',
+        }
+        fmt = ext_to_format.get(path.suffix.lower(), 'PNG')
+
+        buffer = BytesIO()
+        img.save(buffer, format=fmt)
+        buffer.seek(0)
+
+        encoded = base64.b64encode(buffer.read()).decode('utf-8')
+        return encoded
     
     for i, batch in enumerate(inference_loader):
         inputs, model_paths = batch
@@ -246,7 +274,10 @@ def inference(config):
                 print(f"[INFO] Textual model class: {text_output}")
 
                 base = os.path.basename(model_paths[0])
-                print("pipe:{\"image\":\"" + base + "\",\"classification\":\"" + text_output + "\"}")
+
+                thumbnail = image_to_lowres_base64(model_paths[0])
+
+                print("pipe:{\"image\":\"" + base + "\",\"classification\":\"" + text_output + "\",\"base64\":\"" + thumbnail + "\"}")
 
             print(f"[INFO] Inference {i+1}/{len(inference_loader)}: {model_paths[0]}")
             print(f"[INFO] Model output: {outputs}")

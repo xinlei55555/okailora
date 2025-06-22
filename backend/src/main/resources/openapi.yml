@@ -246,6 +246,8 @@ paths:
                           type: string
                         classification:
                           type: string
+                        base64:
+                          type: string
 
   /inference/weights:
     get:
