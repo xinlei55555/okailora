@@ -1,5 +1,5 @@
 datasets/
 *.log
 *.tr
-# __pycache__/
+__pycache__/
 inference_datasets/
