@@ -1,5 +1,16 @@
 import { ChartDataset } from './types';
 import { formatNumber } from './utils';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  ReferenceLine
+} from 'recharts';
 
 interface MetricChartProps {
   datasets: ChartDataset[];
@@ -32,6 +43,17 @@ export default function MetricChart({ datasets, title }: MetricChartProps) {
     );
   }
 
+  // Find the max length of all datasets
+  const maxLen = Math.max(...datasets.map(ds => ds.data.length));
+  // Build a unified data array for recharts, each entry is { index, [label1]: value1, [label2]: value2, ... }
+  const chartData = Array.from({ length: maxLen }, (_, i) => {
+    const entry: any = { index: i };
+    datasets.forEach(ds => {
+      entry[ds.label] = ds.data[i]?.value ?? null;
+    });
+    return entry;
+  });
+
   const maxValue = Math.max(...allData.map(d => d.value));
   const minValue = Math.min(...allData.map(d => d.value));
   const range = maxValue - minValue || 1;
@@ -54,104 +76,54 @@ export default function MetricChart({ datasets, title }: MetricChartProps) {
       </div>
       
       <div className="flex-1 bg-gray-900/50 rounded-lg p-4 border border-gray-700/30 relative min-h-0 overflow-hidden">
-        <svg className="w-full h-full" viewBox="0 0 500 300">
-          {/* Grid lines */}
-          {[0, 1, 2, 3, 4, 5].map(i => (
-            <g key={`grid-${i}`}>
-              <line
-                x1="0"
-                y1={i * 60}
-                x2="500"
-                y2={i * 60}
-                stroke="#374151"
-                strokeWidth="1"
-                opacity="0.3"
-              />
-              <line
-                x1={i * 100}
-                y1="0"
-                x2={i * 100}
-                y2="300"
-                stroke="#374151"
-                strokeWidth="1"
-                opacity="0.3"
-              />
-            </g>
-          ))}
-          
-          {/* Data lines with smooth curves */}
-          {datasets.map(ds => ds.data.length > 1 && (
-            <g key={ds.label}>
-              <defs>
-                <linearGradient id={`gradient-${ds.label.replace(/\s+/g, '-')}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: ds.color, stopOpacity: 0.4 }} />
-                  <stop offset="100%" style={{ stopColor: ds.color, stopOpacity: 0.1 }} />
-                </linearGradient>
-              </defs>
-              
-              {/* Area fill */}
-              <path
-                d={`M 0,300 L ${ds.data.map((point, index) => {
-                  const x = (index / (ds.data.length - 1)) * 500;
-                  const y = 300 - ((point.value - minValue) / range) * 300;
-                  return `${x},${y}`;
-                }).join(' L ')} L 500,300 Z`}
-                fill={`url(#gradient-${ds.label.replace(/\s+/g, '-')})`}
-              />
-              
-              {/* Main line */}
-              <polyline
-                points={ds.data.map((point, index) => {
-                  const x = (index / (ds.data.length - 1)) * 500;
-                  const y = 300 - ((point.value - minValue) / range) * 300;
-                  return `${x},${y}`;
-                }).join(' ')}
-                fill="none"
+        <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+          <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
+            <CartesianGrid stroke="#374151" strokeDasharray="3 3" opacity={0.3} />
+            <XAxis
+              dataKey="index"
+              tick={{ fill: '#9CA3AF', fontSize: 12 }}
+              axisLine={{ stroke: '#374151' }}
+              tickLine={false}
+              ticks={[0, Math.floor(maxLen * 0.25), Math.floor(maxLen * 0.5), Math.floor(maxLen * 0.75), maxLen - 1]}
+              domain={[0, maxLen - 1]}
+              allowDecimals={false}
+              interval={0}
+            />
+            <YAxis
+              domain={[minValue, maxValue]}
+              tick={{ fill: '#9CA3AF', fontSize: 12 }}
+              axisLine={{ stroke: '#374151' }}
+              tickLine={false}
+              width={60}
+              tickFormatter={v => formatNumber(v, 3)}
+              ticks={[
+                maxValue,
+                (maxValue * 3 + minValue) / 4,
+                (maxValue + minValue) / 2,
+                (maxValue + minValue * 3) / 4,
+                minValue
+              ]}
+            />
+            <Tooltip
+              contentStyle={{ background: '#1F2937', border: '1px solid #374151', borderRadius: 8, color: '#F3F4F6' }}
+              labelStyle={{ color: '#9CA3AF' }}
+              formatter={(value: any, name: string) => [formatNumber(value, 3), name]}
+            />
+            {/* Main lines */}
+            {datasets.map(ds => ds.data.length > 1 && (
+              <Line
+                key={ds.label}
+                type="monotone"
+                dataKey={ds.label}
                 stroke={ds.color}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ filter: `drop-shadow(0 0 6px ${ds.color}40)` }}
+                strokeWidth={3}
+                dot={false}
+                activeDot={false}
+                isAnimationActive={false}
               />
-              
-              {/* Data points */}
-              {ds.data.slice(-5).map((point, index, arr) => {
-                const x = ((ds.data.length - arr.length + index) / (ds.data.length - 1)) * 500;
-                const y = 300 - ((point.value - minValue) / range) * 300;
-                return (
-                  <circle
-                    key={`point-${ds.label}-${index}`}
-                    cx={x}
-                    cy={y}
-                    r="4"
-                    fill={ds.color}
-                    stroke="#1F2937"
-                    strokeWidth="2"
-                    style={{ filter: `drop-shadow(0 0 4px ${ds.color})` }}
-                  />
-                );
-              })}
-            </g>
-          ))}
-        </svg>
-        
-        {/* Y-axis labels */}
-        <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400 -ml-16 py-6">
-          <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber(maxValue, 3)}</span>
-          <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber((maxValue * 3 + minValue) / 4, 3)}</span>
-          <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber((maxValue + minValue) / 2, 3)}</span>
-          <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber((maxValue + minValue * 3) / 4, 3)}</span>
-          <span className="bg-gray-800/80 px-2 py-1 rounded">{formatNumber(minValue, 3)}</span>
-        </div>
-        
-        {/* X-axis labels */}
-        <div className="absolute bottom-0 left-0 w-full flex justify-between text-xs text-gray-400 -mb-8 px-6">
-          <span>0</span>
-          <span>{Math.floor(allData.length * 0.25)}</span>
-          <span>{Math.floor(allData.length * 0.5)}</span>
-          <span>{Math.floor(allData.length * 0.75)}</span>
-          <span>{allData.length}</span>
-        </div>
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
