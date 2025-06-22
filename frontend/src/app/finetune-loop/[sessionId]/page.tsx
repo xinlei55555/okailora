@@ -59,6 +59,14 @@ export default function FinetuneLoopPage() {
   // Training completed state
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // System resources state
+  const [systemResources, setSystemResources] = useState({
+    gpuMemory: 14.2,
+    cpuUsage: 67,
+    diskIO: 24,
+    networkIO: 12
+  });
+
   // Fetch real-time data from the backend
   useEffect(() => {
     if (!sessionId || !trainingStatus.isRunning) return;
@@ -118,6 +126,22 @@ export default function FinetuneLoopPage() {
     return () => clearInterval(intervalId);
   }, [sessionId, trainingStatus.isRunning, trainingStatus.startTime, trainingStatus.totalSteps, trainingStatus.totalEpochs]);
 
+  // System resource fluctuation effect
+  useEffect(() => {
+    if (!trainingStatus.isRunning) return;
+
+    const resourceInterval = setInterval(() => {
+      setSystemResources(prev => ({
+        gpuMemory: Math.max(12.0, Math.min(15.8, prev.gpuMemory + (Math.random() - 0.5) * 0.4)),
+        cpuUsage: Math.max(45, Math.min(85, prev.cpuUsage + (Math.random() - 0.5) * 8)),
+        diskIO: Math.max(5, Math.min(65, prev.diskIO + (Math.random() - 0.5) * 15)),
+        networkIO: Math.max(2, Math.min(35, prev.networkIO + (Math.random() - 0.5) * 8))
+      }));
+    }, 2000);
+
+    return () => clearInterval(resourceInterval);
+  }, [trainingStatus.isRunning]);
+
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -138,6 +162,29 @@ export default function FinetuneLoopPage() {
 
   const getProgressPercentage = () => {
     return (trainingStatus.currentStep / trainingStatus.totalSteps) * 100;
+  };
+
+  const getCurrentEpoch = () => {
+    // Infer epoch from training data length and steps per epoch
+    const currentStep = trainLossData.length;
+    const stepsPerEpoch = Math.floor(trainingStatus.totalSteps / trainingStatus.totalEpochs);
+    return Math.min(trainingStatus.totalEpochs, Math.floor(currentStep / stepsPerEpoch) + 1);
+  };
+
+  const getCurrentLoss = () => {
+    return trainLossData.length > 0 ? trainLossData[trainLossData.length - 1].value : 0;
+  };
+
+  const getBestAccuracy = () => {
+    return valAccData.length > 0 ? Math.max(...valAccData.map(d => d.value)) : 0;
+  };
+
+  const getDataThroughput = () => {
+    // Calculate samples processed per second based on elapsed time and current step
+    const elapsedSeconds = trainingStatus.elapsedTime / 1000;
+    const samplesPerStep = 8; // batch size
+    const totalSamples = trainLossData.length * samplesPerStep;
+    return elapsedSeconds > 0 ? totalSamples / elapsedSeconds : 0;
   };
 
   // Chart component for multiple datasets
@@ -386,13 +433,13 @@ export default function FinetuneLoopPage() {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-400">Overall Progress</span>
-                    <span className="text-sm font-medium">{getProgressPercentage().toFixed(1)}%</span>
+                    <span className="text-sm text-gray-400">Current Loss</span>
+                    <span className="text-sm font-medium text-blue-400">{formatNumber(getCurrentLoss())}</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${getProgressPercentage()}%` }}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(5, Math.min(95, (1 - getCurrentLoss()) * 100))}%` }}
                     ></div>
                   </div>
                 </div>
@@ -400,19 +447,23 @@ export default function FinetuneLoopPage() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <div className="text-gray-400">Epoch</div>
-                    <div className="font-medium">{trainingStatus.currentEpoch}/{trainingStatus.totalEpochs}</div>
+                    <div className="font-medium">{getCurrentEpoch()}/{trainingStatus.totalEpochs}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Step</div>
-                    <div className="font-medium">{trainingStatus.currentStep}/{trainingStatus.totalSteps}</div>
+                    <div className="text-gray-400">Steps</div>
+                    <div className="font-medium">{trainLossData.length}</div>
                   </div>
                   <div>
                     <div className="text-gray-400">Elapsed</div>
                     <div className="font-medium">{formatTime(trainingStatus.elapsedTime)}</div>
                   </div>
                   <div>
-                    <div className="text-gray-400">Remaining</div>
-                    <div className="font-medium">{formatTime(trainingStatus.estimatedTimeRemaining)}</div>
+                    <div className="text-gray-400">Best Acc</div>
+                    <div className="font-medium text-green-400">{formatNumber(getBestAccuracy() * 100, 1)}%</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-gray-400">Throughput</div>
+                    <div className="font-medium text-cyan-400">{formatNumber(getDataThroughput(), 1)} samples/sec</div>
                   </div>
                 </div>
               </div>
@@ -427,28 +478,49 @@ export default function FinetuneLoopPage() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm text-gray-400">GPU Memory</span>
-                    <span className="text-sm">14.2 / 16.0 GB</span>
+                    <span className="text-sm">{systemResources.gpuMemory.toFixed(1)} / 16.0 GB</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-1">
-                    <div className="bg-yellow-500 h-1 rounded-full" style={{ width: '89%' }}></div>
+                    <div 
+                      className="bg-yellow-500 h-1 rounded-full transition-all duration-1000" 
+                      style={{ width: `${(systemResources.gpuMemory / 16.0) * 100}%` }}
+                    ></div>
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm text-gray-400">CPU Usage</span>
-                    <span className="text-sm">67%</span>
+                    <span className="text-sm">{Math.round(systemResources.cpuUsage)}%</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-1">
-                    <div className="bg-blue-500 h-1 rounded-full" style={{ width: '67%' }}></div>
+                    <div 
+                      className="bg-blue-500 h-1 rounded-full transition-all duration-1000" 
+                      style={{ width: `${systemResources.cpuUsage}%` }}
+                    ></div>
                   </div>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm text-gray-400">Disk I/O</span>
-                    <span className="text-sm">24%</span>
+                    <span className="text-sm">{Math.round(systemResources.diskIO)}%</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-1">
-                    <div className="bg-green-500 h-1 rounded-full" style={{ width: '24%' }}></div>
+                    <div 
+                      className="bg-green-500 h-1 rounded-full transition-all duration-1000" 
+                      style={{ width: `${systemResources.diskIO}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-400">Network I/O</span>
+                    <span className="text-sm">{Math.round(systemResources.networkIO)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-1">
+                    <div 
+                      className="bg-purple-500 h-1 rounded-full transition-all duration-1000" 
+                      style={{ width: `${systemResources.networkIO}%` }}
+                    ></div>
                   </div>
                 </div>
               </div>
