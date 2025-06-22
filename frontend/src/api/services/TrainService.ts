@@ -66,4 +66,24 @@ export class TrainService {
             },
         });
     }
+    /**
+     * Train status
+     * Get status of train job
+     * @param deploymentId
+     * @returns any Status of train job
+     * @throws ApiError
+     */
+    public static trainStatus(
+        deploymentId: string,
+    ): CancelablePromise<{
+        finished: boolean;
+    }> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/train/status',
+            headers: {
+                'deployment_id': deploymentId,
+            },
+        });
+    }
 }

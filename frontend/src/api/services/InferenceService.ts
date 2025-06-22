@@ -72,6 +72,26 @@ export class InferenceService {
         });
     }
     /**
+     * Inference status
+     * Get status of inference job
+     * @param deploymentId
+     * @returns any Status of inference job
+     * @throws ApiError
+     */
+    public static inferenceStatus(
+        deploymentId: string,
+    ): CancelablePromise<{
+        finished: boolean;
+    }> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/inference/status',
+            headers: {
+                'deployment_id': deploymentId,
+            },
+        });
+    }
+    /**
      * Get inference weights
      * Retrieves the current weights/configuration for inference.
      * @param deploymentId
