@@ -310,6 +310,7 @@ export default function FinetunePage() {
               ← Back to Configuration
             </button>
             <button
+              onClick={() => router.push(`/finetune-loop/${sessionId}`)}
               className={specialButtonClass}
             >
               🚀 Start Fine-tuning
