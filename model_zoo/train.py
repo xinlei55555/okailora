@@ -174,7 +174,7 @@ def inference(config):
     if os.path.exists(checkpoint_path):
         print(f"[INFO] Loading checkpoint from {checkpoint_path}")
         checkpoint = torch.load(checkpoint_path, map_location=device)
-        model.load_state_dict(checkpoint['model'])
+        model.load_state_dict(checkpoint['model'], strict=False)
     else:
         print(f"[ERROR] Checkpoint not found: {checkpoint_path}")
         return
